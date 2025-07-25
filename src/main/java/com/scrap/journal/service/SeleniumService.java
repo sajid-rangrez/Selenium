@@ -71,7 +71,15 @@ public class SeleniumService {
         	Thread.sleep(5000);
         	try {
         		String doi  = driver.findElement(By.xpath("/html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[4]/div")).getText();
-        		System.out.println("Doi : "+doi);
+        		
+                Matcher matcherForDoi = Pattern.compile("DOI:\\s*(\\S+)").matcher(doi);
+
+                if (matcherForDoi.find()) {
+                   doi = matcherForDoi.group(1);
+                } else {
+                    System.out.println("DOI not found.");
+                }
+                System.out.println("Doi : "+doi);
         		
         	} catch(Exception e) {
         	
@@ -97,6 +105,7 @@ public class SeleniumService {
         	} catch(Exception e) {
         		
         	}	
+        	System.out.println("___________________________________________________________________________________________________________________________________");
         }
 	}
 	

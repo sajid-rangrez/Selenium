@@ -1,0 +1,26 @@
+{
+	"jour3":{
+		"name" : "",
+		"url" : "https://pubmed.ncbi.nlm.nih.gov",
+		"products": ["paracetamol", "ibuprofen"],
+		"signIn" : "",
+		"username" : "",
+		"password" : "",
+		"scraping_config": {
+		    "search_url": "",
+		    "search_input_selector": "/html/body/div[3]/main/div[1]/div/for`m/div/div[1]/div/span/input",
+		    "search_button_selector": "",
+		    "results_selector": "",
+		    "title_selector": "",
+		    "link_selector": "",
+		    "abstract_selector": "",
+		    "authors_selector": "",
+		    "doi_selector":"",
+		    "extract_detailed_data": true,
+		    "detailed_abstract_selector": "",
+		    "detailed_authors_selector": "",
+		    "detailed_title_selector": "",
+		    "delay": 3
+	  }
+	}
+}
