@@ -16,6 +16,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chromium.ChromiumDriver;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 
@@ -23,7 +24,12 @@ public class ScrapMyJournal {
 
 	public static final Logger logger = LogManager.getLogger(ScrapMyJournal.class);
 
-	private static String JOURNAL_CONFIG = "src/main/resources/journalConfig.json";
+	public static final String XPATH = "xpath";
+	public static final String ID = "id";
+	public static final String CSS = "css";
+	public static final String CLASS = "class";
+	private static final String JOURNAL_CONFIG = "src/main/resources/journalConfig.json";
+	
 	Properties props = new Properties();
 	private WebDriver driver;
 	public static JSONObject jsonObject;
@@ -43,26 +49,34 @@ public class ScrapMyJournal {
 	public static void main(String[] args) throws InterruptedException {
 		ScrapMyJournal s = new ScrapMyJournal();
 		s.init();
-		Map<String, Object> configs = (Map<String, Object>) jsonObject.get("jour3");
-		Map<String, Object> scrapingConfig = (Map<String, Object>) configs.get("scraping_config");
-		String url = (String) configs.get("url");
-		String doiPath = (String) scrapingConfig.get("doi_selector");
-		String titlePathString = (String) scrapingConfig.get("title_selector");
-		String abstractPath = (String) scrapingConfig.get("abstract_selector");
-		String authorsPath = (String) scrapingConfig.get("authors_selector");
-		String searchPath = (String) scrapingConfig.get("search_input_selector");
-		String resultsPath = (String) scrapingConfig.get("results_selector");
+		Map<String, Object> configs = (Map<String, Object>) jsonObject;
+//		for (Map.Entry<String, Object> entry : configs.entrySet()) {
+//			Map<String, Object> journalConfig = (Map<String, Object>) entry.getValue();
+			Map<String, Object> journalConfig = (Map<String, Object>) configs.get("jour2");
+			Map<String, Object> scrapingConfig = (Map<String, Object>) journalConfig.get("scraping_config");
+			int increaseInListPage = ((Long) scrapingConfig.get("increase_pattern_in_list_page")).intValue();
+			String url = (String) journalConfig.get("url");
+			logger.info("Starting for {}", url);
+			List<String> products = (List<String>) journalConfig.get("products");
 
-		s.openJournal(url, false, null, null);
-		Thread.sleep(3000);
-		s.searchProduct(searchPath, "Fever");
-		Thread.sleep(3000);
-		List<String> results = s.extractSearchResults(resultsPath, 20, 1);
-		logger.info(results);
-		logger.info("Got {} results ", results.size());
-		s.extractInfoFromResults(results, titlePathString, abstractPath, authorsPath, doiPath);
+			Thread.sleep(2000);
+			boolean login = (boolean) journalConfig.get("login");
+			s.openJournal(url, login, journalConfig);
+			for (String product : products) {
+				String searchPath = (String) scrapingConfig.get("search_input_selector");
+				String resultsPath = (String) scrapingConfig.get("results_selector");
 
-		// s.saudijournalOfAnesthesia();
+				Thread.sleep(2000);
+				s.searchProduct(searchPath, product);
+				Thread.sleep(3000);
+				List<String> results = s.extractSearchResults(resultsPath, 200, increaseInListPage);
+				logger.info(results);
+				logger.info("Got {} results ", results.size());
+				s.extractInfoFromResults(results, scrapingConfig);
+
+				// s.saudijournalOfAnesthesia();
+//			}
+		}
 	}
 
 	public void init() {
@@ -73,106 +87,71 @@ public class ScrapMyJournal {
 		loadConfig();
 	}
 
-	public void openJournal(String url, boolean login, String username, String password) {
+	public void openJournal(String url, boolean login, Map<String, Object> journalConfig) {
 		driver.get(url);
 //		driver.findElement(By.xpath("/html/body/div[5]/div[2]/div/div/div[2]/div/div/button[2]")).click();
 		if (login) {
-			// TODO : need to configure logi steps
+			Map<String, Object> loginConfig = (Map<String, Object>) journalConfig.get("login_config");
+			login(loginConfig);
 		}
-	}
-
-	public void searchProduct(String searchConfig, String prodect) {
-		String[] search = searchConfig.split(" ");
-		if (search[0].equalsIgnoreCase("id")) {
-			driver.findElement(By.id(search[1])).sendKeys(prodect + Keys.ENTER);
-
-		} else {
-			driver.findElement(By.xpath(search[1])).sendKeys(prodect + Keys.ENTER);
-
-		}
-
 	}
 
 	public List<String> extractSearchResults(String listingXPath, int totalResults, int increasePattern) {
 		List<String> results = new ArrayList<>();
 
-		if (totalResults > 10)
-			totalResults = 10;
+		driver.findElements(By.id("#checkBoxListContainer"));
 		int j = 1;
 		for (int i = 0; i < totalResults; i++) {
-			String link = driver.findElement(By.xpath(listingXPath.replace("${index}", String.valueOf(j))))
-					.getAttribute("href");
-			results.add(link);
-			j = j + increasePattern;
+			try {
+				String link = driver.findElement(By.xpath(listingXPath.replace("${index}", String.valueOf(j))))
+						.getAttribute("href");
+				results.add(link);
+				j = j + increasePattern;
+			} catch (Exception e) {
+				break;
+			}
 		}
-
 		return results;
 	}
 
-	public void extractInfoFromResults(List<String> results, String titleConfig, String abstractConfig,
-			String authorsConfig, String doiConfig) throws InterruptedException {
-		String[] titleConfigAr = titleConfig.split(" ");
-		String[] abstractConfigAr = abstractConfig.split(" ");
-		String[] authorsConfigAr = authorsConfig.split(" ");
-		String[] doiConfigAr = doiConfig.split(" ");
+	public void extractInfoFromResults(List<String> results, Map<String, Object> scrapingConfig)
+			throws InterruptedException {
+		String doiConfig = (String) scrapingConfig.get("doi_selector");
+		String titleConfig = (String) scrapingConfig.get("title_selector");
+		String abstractConfig = (String) scrapingConfig.get("abstract_selector");
+		String authorsConfig = (String) scrapingConfig.get("authors_selector");
+		boolean extractDoi = (boolean) scrapingConfig.get("extract_doi_from_text");
 
 		for (String result : results) {
 			driver.get(result);
 			Thread.sleep(5000);
-			if (doiConfigAr[0].equalsIgnoreCase("id")) {
-				try {
-					String doi = driver.findElement(By.id(doiConfigAr[1])).getText();
 
-//					Matcher matcherForDoi = Pattern.compile("DOI:\\s*(\\S+)").matcher(doi);
-//
-//					if (matcherForDoi.find()) {
-//						doi = matcherForDoi.group(1);
-//					} else {
-//						logger.error("DOI not found.");
-//					}
-					logger.info("Doi : " + doi);
-				} catch (Exception e) {
-
-				}
-			} else {
-				try {
-					String doi = driver.findElement(By.xpath(doiConfigAr[1])).getText();
-					logger.info("Doi : " + doi);
-
-				} catch (Exception e) {
-					logger.error("Doi Not Found");
-				}
-			}
 			try {
-				String title;
-				if (titleConfigAr[0].equalsIgnoreCase("id")) 
-					title = driver.findElement(By.id(titleConfigAr[1])).getText();
-				else 
-					title = driver.findElement(By.xpath(titleConfigAr[1])).getText();
+				String doi = getText(doiConfig);
+				if (extractDoi)
+					doi = extractDoi(doi);
+				logger.info("Doi : " + doi);
+
+			} catch (Exception e) {
+				logger.info("Doi Not Found");
+			}
+
+			try {
+				String title = getText(titleConfig);
 				logger.info("Title : " + title);
 
 			} catch (Exception e) {
 				logger.error("Title not found.");
 			}
 			try {
-				String abstractText;
-				if (abstractConfigAr[0].equalsIgnoreCase("id")) 
-					abstractText = driver.findElement(By.id(abstractConfigAr[1])).getText();
-				else 
-					abstractText = driver.findElement(By.xpath(abstractConfigAr[1])).getText();
-
+				String abstractText = getText(abstractConfig);
 				logger.info("Abstract : " + abstractText);
 
 			} catch (Exception e) {
 				logger.error("Abstract not found.");
 			}
 			try {
-				String authors;
-				if (authorsConfigAr[0].equalsIgnoreCase("id")) 
-					authors = driver.findElement(By.id(authorsConfigAr[1])).getText();
-				else
-					authors = driver.findElement(By.xpath(authorsConfigAr[1])).getText();
-				
+				String authors = getText(authorsConfig);
 				logger.info("Authors : " + authors);
 			} catch (Exception e) {
 				logger.error("Authors not found.");
@@ -180,6 +159,120 @@ public class ScrapMyJournal {
 			logger.info(
 					"___________________________________________________________________________________________________________________________________");
 		}
+	}
+
+	public String extractDoi(String value) {
+		Matcher matcherForDoi = Pattern.compile("DOI:\\s*(\\S+)").matcher(value);
+
+		if (matcherForDoi.find()) {
+			return matcherForDoi.group(1);
+		} else {
+			logger.error("DOI not found.");
+		}
+		return "NA";
+	}
+
+	private void login(Map<String, Object> loginConfig) {
+		String loginForm = ((String) loginConfig.get("login_form_selector"));
+		String userIdSelector = ((String) loginConfig.get("username_selector"));
+		String paswordSelector = ((String) loginConfig.get("password_selector"));
+		String SubmitButtonSelector = ((String) loginConfig.get("submit_button_selector"));
+		String userId = (String) loginConfig.get("username-email");
+		String password = (String) loginConfig.get("password");
+
+		try {
+			Thread.sleep(3000);
+			selectorClick(loginForm);
+			selectorInput(userIdSelector, userId);
+			Thread.sleep(1000);
+			selectorInput(paswordSelector, password);
+			Thread.sleep(3000);
+			selectorClick(SubmitButtonSelector);
+
+			logger.info("inside login");
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	public void selectorInput(String value, String text) {
+		String[] selector = value.split(" ");
+		if (selector[0].equals(ID))
+			driver.findElement(By.id(selector[1])).sendKeys(text);
+		else if (selector[0].equals(CSS))
+			driver.findElement(By.cssSelector(selector[1])).sendKeys(text);
+		else
+			driver.findElement(By.xpath(selector[1])).sendKeys(text);
+
+	}
+
+	public void searchProduct(String searchConfig, String prodect) {
+		String[] search = searchConfig.split(" ");
+		logger.info("inside SearchProduct : {}",prodect);
+		
+		if (search[0].equalsIgnoreCase(ID)) {
+			driver.findElement(By.id(search[1])).sendKeys(prodect + Keys.ENTER);
+			logger.info("Seatching for product : {} using id",prodect);
+		} else if (search[0].equalsIgnoreCase(XPATH)) {
+			driver.findElement(By.xpath(search[1])).sendKeys(prodect + Keys.ENTER);
+			logger.info("Seatching for product : {} using xpath",prodect);
+
+		} else if (search[0].equalsIgnoreCase(CSS)) {
+			driver.findElement(By.cssSelector(search[1])).sendKeys(prodect + Keys.ENTER);
+			logger.info("Seatching for product : {} using css",prodect);
+		} else if(search[0].equalsIgnoreCase(CLASS)) {
+			driver.findElement(By.className(search[1])).sendKeys(prodect + Keys.ENTER);
+			logger.info("Seatching for product : {} using className",prodect);
+			
+		}
+
+	}
+
+	public String getText(String value) {
+		String[] selector = value.split(" ");
+		if (selector[0].equals(ID))
+			return driver.findElement(By.id(selector[1])).getText();
+		else if (selector[0].equals(CSS))
+			return driver.findElement(By.cssSelector(selector[1])).getText();
+		else
+			return driver.findElement(By.xpath(selector[1])).getText();
+
+	}
+
+	public void selectorClick(String value) {
+		String[] selector = value.split(" ");
+		try {
+			if (selector[0].equals(ID)) {
+				driver.findElement(By.id(selector[1])).click();
+				logger.info("inside try for id");
+			} else if (selector[0].equals(CSS)) {
+				driver.findElement(By.cssSelector(selector[1])).click();
+				logger.info("inside try for css");
+			} else if (selector[0].equals(CLASS)) {
+				driver.findElement(By.className(selector[1])).click();
+				logger.info("inside try for class");
+			} else {
+				driver.findElement(By.xpath(selector[1])).click();
+				logger.info("inside try for xpath");
+			}
+		} catch (Exception e) {
+			if (selector[0].equals(ID)) {
+				((ChromiumDriver) driver).executeScript("arguments[0].click();",
+						driver.findElement(By.id(selector[1])));
+				logger.info("inside catch for id");
+			} else if (selector[0].equals(CSS)) {
+				((ChromiumDriver) driver).executeScript("arguments[0].click();",
+						driver.findElement(By.cssSelector(selector[1])));
+				logger.info("inside catch for css");
+			} else {
+				((ChromiumDriver) driver).executeScript("arguments[0].click();",
+						driver.findElement(By.xpath(selector[1])));
+				logger.info("inside catch for xpath");
+			}
+		}
+
 	}
 
 }
