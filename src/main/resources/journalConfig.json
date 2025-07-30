@@ -1,9 +1,10 @@
 {
-	"jour1":{
+	"1":{
 		"name" : "",
 		"url" : "https://journals.lww.com/sjan/pages/default.aspx",
 		"products": ["paracetamol", "ibuprofen"],
-		"login" : false ,
+		"login" : true ,
+		"cookie_selector" : "xpath /html/body/div[5]/div[2]/div/div/div[2]/div/div/button[2]",
 		"login_config" : {
 			"login_form_selector" : "xpath /html/body/form/div[5]/div/header/div/div[1]/section/ul/li[1]/button/span",
 			"username_selector" : "css input[name='userName']",
@@ -16,14 +17,14 @@
 		    "search_url": "",
 		    "search_input_selector": "css input[value='Search']",
 		    "increase_pattern_in_list_page":2,
-		    "results_selector": "/html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div/div/div/div/div[1]/div[2]/section/div[2]/div[2]/div/span/div[1]/div[${index}]/article/div/div[2]/ul[2]/li/div/a",
+		    "results_selector": "/html/body/form/div[6]/div/div/div[4]/div[1]/div[3]/div/div/div/div/div/div[1]/div[2]/section/div[2]/div[2]/div/span/div[1]/div[${index}]/article/div/div[2]/ul[2]/li/div/a",
 		    "title_selector": "css h1[class='ejp-article-title']",
-		    "abstract_selector": "xpath /html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[6]/div/div/div/p",
-		    "authors_selector": "xpath /html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[2]/p",
-		    "doi_selector":"xpath /html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[4]/div",
+		    "abstract_selector": "xpath /html/body/form/div[6]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[6]/div/div/div/p",
+		    "authors_selector": "xpath /html/body/form/div[6]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[2]/p",
+		    "doi_selector":"xpath /html/body/form/div[6]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[4]/div",
 		    "extract_doi_from_text":true,
-		    "delay": 3
-	  }
+		    "delay": 3000
+	    }
 	},
 	"jour2":{
 		"name" : "",
@@ -45,8 +46,8 @@
 		    "authors_selector": "xpath /html/body/div[3]/section/div/div/div/div/div/div/div/div[1]/div/div/div/div/div/div/div[1]/div[3]/span",
 		    "doi_selector":"xpath /html/body/div[3]/section/div/div/div/div/div/div/div/div[1]/div/div/div/div/div/div/div[1]/div[4]/span[6]",
 		    "extract_doi_from_text":true,
-		    "delay": 3
-	  }
+		    "delay": 3000
+	    }
 	},
 	"jour3":{
 		"name" : "",
@@ -70,7 +71,112 @@
 		    "authors_selector": "xpath /html/body/div[5]/main/header/div[1]/div[2]/div/div",
 		    "doi_selector":"css a[data-ga-action='DOI']",
 		    "extract_doi_from_text":false,
-		    "delay": 3
+		    "delay": 3000
+	    }
+	},
+	"4":{
+		"name" : "",
+		"url" : "https://amj.journals.ekb.eg/",
+		"products": ["paracetamol", "ibuprofen"],
+		"login" : false ,
+		"login_config" : {
+			"login_form_selector" : "",
+			"username_selector" : "",
+			"password_selector" : "",
+			"submit_button_selector" : "",
+			"username-email" : "",
+			"password" : ""
+		},
+		"scraping_config": {
+		    "search_url": "",
+		    "search_input_selector": "xpath /html/body/div[4]/div/div[1]/div[3]/div[2]/div[2]/div[1]/form/input[2]",
+		    "increase_pattern_in_list_page":1,
+		    "results_selector": "/html/body/div[4]/div/section/div/div[1]/div/div[3]/div[${index}]/h5/a",
+		    "title_selector": "xpath /html/body/div[4]/div/section/div/div[1]/div/h1",
+		    "abstract_selector": "xpath /html/body/div[4]/div/section/div/div[1]/div/div[1]/div[3]",
+		    "authors_selector": "xpath /html/body/div[4]/div/section/div/div[1]/div/div[1]/ul[1]",
+		    "doi_selector":"xpath /html/body/div[4]/div/section/div/div[1]/div/div[1]/div[2]/span/a",
+		    "extract_doi_from_text":false,
+		    "delay": 3000
+		}
+	},
+	"5":{
+		"name" : "",
+		"url" : "https://ebwhj.journals.ekb.eg/",
+		"products": ["paracetamol", "ibuprofen"],
+		"login" : false ,
+		"login_config" : {
+			"login_form_selector" : "",
+			"username_selector" : "",
+			"password_selector" : "",
+			"submit_button_selector" : "",
+			"username-email" : "",
+			"password" : ""
+		},
+		"scraping_config": {
+		    "search_url": "",
+		    "search_input_selector": "xpath /html/body/div[4]/div/div[1]/div[3]/div[2]/div[2]/div[1]/form/input[2]",
+		    "increase_pattern_in_list_page":1,
+		    "results_selector": "/html/body/div[4]/div/section/div/div[1]/div/div[3]/div[${index}]/h5/a",
+		    "title_selector": "xpath /html/body/div[4]/div/section/div/div[1]/div/h1",
+		    "abstract_selector": "xpath /html/body/div[4]/div/section/div/div[1]/div/div[1]/div[3]",
+		    "authors_selector": "xpath /html/body/div[4]/div/section/div/div[1]/div/div[1]/ul[1]",
+		    "doi_selector":"xpath /html/body/div[4]/div/section/div/div[1]/div/div[1]/div[2]/span/a",
+		    "extract_doi_from_text":false,
+		    "delay": 3000
 	  }
+	},
+	"6":{
+		"name" : "",
+		"url" : "https://zumj.journals.ekb.eg",
+		"products": ["paracetamol", "ibuprofen"],
+		"login" : false ,
+		"login_config" : {
+			"login_form_selector" : "",
+			"username_selector" : "",
+			"password_selector" : "",
+			"submit_button_selector" : "",
+			"username-email" : "",
+			"password" : ""
+		},
+		"scraping_config": {
+		    "search_url": "",
+		    "search_input_selector": "xpath /html/body/div[4]/div/div[1]/div[3]/div[2]/div[2]/div[1]/form/input[2]",
+		    "increase_pattern_in_list_page":1,
+		    "results_selector": "/html/body/div[4]/div/section/div/div[1]/div/div[3]/div[${index}]/h5/a",
+		    "title_selector": "xpath /html/body/div[4]/div/section/div/div[1]/div/h1",
+		    "abstract_selector": "xpath /html/body/div[4]/div/section/div/div[1]/div/div[1]/div[3]",
+		    "authors_selector": "xpath /html/body/div[4]/div/section/div/div[1]/div/div[1]/ul[1]",
+		    "doi_selector":"xpath /html/body/div[4]/div/section/div/div[1]/div/div[1]/div[2]/span/a",
+		    "extract_doi_from_text":false,
+		    "delay": 3000
+	  }
+	},
+	"7":{
+		"name" : "",
+		"url" : "https://www.universimed.com/at/epaper",
+		"products": ["paracetamol", "ibuprofen"],
+		"login" : false ,
+		"cookie_selector" : "",
+		"login_config" : {
+			"login_form_selector" : "",
+			"username_selector" : "",
+			"password_selector" : "",
+			"submit_button_selector" : "",
+			"username-email" : "",
+			"password" : ""
+		},
+		"scraping_config": {
+		    "search_url": "",
+		    "search_input_selector": "css input[type='search']",
+		    "increase_pattern_in_list_page":1,
+		    "results_selector": "/html/body/div[1]/main/div/div/div/div[1]/div/div/div/div/div/div/div[2]/div/div/div[${index}]/article/a[1]",
+		    "title_selector": "xpath /html/body/div[1]/main/div/div/div/div/div[1]/div[2]/h1",
+		    "abstract_selector": "xpath /html/body/div[1]/main/div/div/div/div/div[3]/div[1]/div/div[1]/div/div/div[1]",
+		    "authors_selector": "xpath /html/body/div[1]/main/div/div/div/div/div[2]/div[3]/div[2]/div/p[2]",
+		    "doi_selector":"",
+		    "extract_doi_from_text":false,
+		    "delay": 3000
+	    }
 	}
 }

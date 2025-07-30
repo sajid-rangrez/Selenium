@@ -1,25 +1,53 @@
 {
-	"jour3":{
+	"jour1":{
 		"name" : "",
-		"url" : "https://pubmed.ncbi.nlm.nih.gov",
+		"url" : "",
 		"products": ["paracetamol", "ibuprofen"],
-		"signIn" : "",
-		"username" : "",
-		"password" : "",
+		"login" : false ,
+		"login_config" : {
+			"login_form_selector" : "",
+			"username_selector" : "",
+			"password_selector" : "",
+			"submit_button_selector" : "",
+			"username-email" : "",
+			"password" : ""
+		},
 		"scraping_config": {
 		    "search_url": "",
-		    "search_input_selector": "/html/body/div[3]/main/div[1]/div/for`m/div/div[1]/div/span/input",
-		    "search_button_selector": "",
+		    "search_input_selector": "",
+		    "increase_pattern_in_list_page":2,
 		    "results_selector": "",
 		    "title_selector": "",
-		    "link_selector": "",
 		    "abstract_selector": "",
 		    "authors_selector": "",
 		    "doi_selector":"",
-		    "extract_detailed_data": true,
-		    "detailed_abstract_selector": "",
-		    "detailed_authors_selector": "",
-		    "detailed_title_selector": "",
+		    "extract_doi_from_text":true,
+		    "delay": 3
+	  }
+	},
+	"4":{
+		"name" : "example of human verification",
+		"url" : "https://onlinelibrary.wiley.com/index/3037",
+		"products": ["paracetamol", "ibuprofen"],
+		"login" : false ,
+		"login_config" : {
+			"login_form_selector" : "",
+			"username_selector" : "",
+			"password_selector" : "",
+			"submit_button_selector" : "",
+			"username-email" : "",
+			"password" : ""
+		},
+		"scraping_config": {
+		    "search_url": "",
+		    "search_input_selector": "css input[type='search']",
+		    "increase_pattern_in_list_page":2,
+		    "results_selector": "",
+		    "title_selector": "",
+		    "abstract_selector": "",
+		    "authors_selector": "",
+		    "doi_selector":"",
+		    "extract_doi_from_text":true,
 		    "delay": 3
 	  }
 	}

@@ -16,20 +16,16 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.ChromiumDriver;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 
-public class ScrapMyJournal {
+public class ScrapMyJournal implements ScrapperConfigKeys {
 
 	public static final Logger logger = LogManager.getLogger(ScrapMyJournal.class);
 
-	public static final String XPATH = "xpath";
-	public static final String ID = "id";
-	public static final String CSS = "css";
-	public static final String CLASS = "class";
-	private static final String JOURNAL_CONFIG = "src/main/resources/journalConfig.json";
-	
+	public static int deley = 3000;
 	Properties props = new Properties();
 	private WebDriver driver;
 	public static JSONObject jsonObject;
@@ -48,63 +44,89 @@ public class ScrapMyJournal {
 
 	public static void main(String[] args) throws InterruptedException {
 		ScrapMyJournal s = new ScrapMyJournal();
-		s.init();
+		s.startScraping();
+	}
+
+	public void startScraping() throws InterruptedException {
+		init();
 		Map<String, Object> configs = (Map<String, Object>) jsonObject;
 //		for (Map.Entry<String, Object> entry : configs.entrySet()) {
-//			Map<String, Object> journalConfig = (Map<String, Object>) entry.getValue();
-			Map<String, Object> journalConfig = (Map<String, Object>) configs.get("jour2");
-			Map<String, Object> scrapingConfig = (Map<String, Object>) journalConfig.get("scraping_config");
-			int increaseInListPage = ((Long) scrapingConfig.get("increase_pattern_in_list_page")).intValue();
-			String url = (String) journalConfig.get("url");
+//			JSONObject journalConfig = (JSONObject) entry.getValue();
+		    JSONObject journalConfig = (JSONObject) configs.get("1");
+			JSONObject scrapingConfig = (JSONObject) journalConfig.get(SCRAPING_CONFIF);
+			int increaseInListPage = ((Long) scrapingConfig.get(INCREASE_PATTERN_IN_LIST_PAGE)).intValue();
+			try {
+				deley = ((Long) scrapingConfig.get(DELEY)).intValue();
+			} catch (Exception e) {
+				logger.error("error in getting deley value {}",e.getMessage());
+			}
+			String url = (String) journalConfig.get(URL);
 			logger.info("Starting for {}", url);
-			List<String> products = (List<String>) journalConfig.get("products");
+			List<String> products = (List<String>) journalConfig.get(PRODUCTS);
 
-			Thread.sleep(2000);
-			boolean login = (boolean) journalConfig.get("login");
-			s.openJournal(url, login, journalConfig);
+			Thread.sleep(deley);
+			boolean login = (boolean) journalConfig.get(LOGIN);
 			for (String product : products) {
-				String searchPath = (String) scrapingConfig.get("search_input_selector");
-				String resultsPath = (String) scrapingConfig.get("results_selector");
+				try {
+					login = openJournal(url, login, journalConfig);
+					String searchPath = (String) scrapingConfig.get(SEARCH_INPUT_SELECTOR);
+					String resultsPath = (String) scrapingConfig.get(RESULT_SELECTOR);
 
-				Thread.sleep(2000);
-				s.searchProduct(searchPath, product);
-				Thread.sleep(3000);
-				List<String> results = s.extractSearchResults(resultsPath, 200, increaseInListPage);
-				logger.info(results);
-				logger.info("Got {} results ", results.size());
-				s.extractInfoFromResults(results, scrapingConfig);
-
-				// s.saudijournalOfAnesthesia();
+					Thread.sleep(deley);
+					searchProduct(searchPath, product);
+					Thread.sleep(deley);
+					List<String> results = extractSearchResults(resultsPath, 100, increaseInListPage);
+					logger.info(results);
+					logger.info("Got {} results ", results.size());
+					extractInfoFromResults(results, scrapingConfig);
+				} catch (Exception e) {
+					logger.error("Got error while scaraping product {} on {}", product, url);
+				}
 //			}
 		}
+//		driver.close();
+		logger.info("Script complete!");
 	}
 
 	public void init() {
-
-		WebDriverManager.chromedriver().setup();
+//		ChromeOptions options = new ChromeOptions();
+//		options.addArguments("--headless=new");  // or "--headless" for older versions
+//		options.addArguments("--disable-gpu");   // Optional: better compatibility
+//		options.addArguments("--window-size=1920,1080");  
+//		driver = new ChromeDriver(options);
 		driver = new ChromeDriver();
+		WebDriverManager.chromedriver().setup();
 		driver.manage().window().maximize();
 		loadConfig();
 	}
 
-	public void openJournal(String url, boolean login, Map<String, Object> journalConfig) {
-		driver.get(url);
-//		driver.findElement(By.xpath("/html/body/div[5]/div[2]/div/div/div[2]/div/div/button[2]")).click();
-		if (login) {
-			Map<String, Object> loginConfig = (Map<String, Object>) journalConfig.get("login_config");
-			login(loginConfig);
+	public boolean openJournal(String url, boolean login, JSONObject journalConfig) {
+		try {
+			driver.get(url);		
+		} catch(Exception e) {
+			logger.info("Something wrong with the website {}",url);
+			logger.error(e.getMessage());
 		}
+		try {
+			selectorClick((String) journalConfig.get(COOKIE_SELECTOR));
+		} catch (Exception e) {
+			logger.info("Config for Cookie popup not found or not configured");
+		}
+		if (login) {
+			login(journalConfig);
+			login = false;
+		}
+		return login;
 	}
 
 	public List<String> extractSearchResults(String listingXPath, int totalResults, int increasePattern) {
 		List<String> results = new ArrayList<>();
 
-		driver.findElements(By.id("#checkBoxListContainer"));
 		int j = 1;
 		for (int i = 0; i < totalResults; i++) {
 			try {
 				String link = driver.findElement(By.xpath(listingXPath.replace("${index}", String.valueOf(j))))
-						.getAttribute("href");
+						.getAttribute(LINK_ATTRIBUTE);
 				results.add(link);
 				j = j + increasePattern;
 			} catch (Exception e) {
@@ -116,15 +138,15 @@ public class ScrapMyJournal {
 
 	public void extractInfoFromResults(List<String> results, Map<String, Object> scrapingConfig)
 			throws InterruptedException {
-		String doiConfig = (String) scrapingConfig.get("doi_selector");
-		String titleConfig = (String) scrapingConfig.get("title_selector");
-		String abstractConfig = (String) scrapingConfig.get("abstract_selector");
-		String authorsConfig = (String) scrapingConfig.get("authors_selector");
-		boolean extractDoi = (boolean) scrapingConfig.get("extract_doi_from_text");
+		String doiConfig = (String) scrapingConfig.get(DOI_SELECTOR);
+		String titleConfig = (String) scrapingConfig.get(TITLE_SELECTOR);
+		String abstractConfig = (String) scrapingConfig.get(ABSTRACT_SELECTOR);
+		String authorsConfig = (String) scrapingConfig.get(AUTHORS_SELECTOR);
+		boolean extractDoi = (boolean) scrapingConfig.get(EXTRACT_DOI);
 
 		for (String result : results) {
 			driver.get(result);
-			Thread.sleep(5000);
+			Thread.sleep(deley);
 
 			try {
 				String doi = getText(doiConfig);
@@ -162,7 +184,7 @@ public class ScrapMyJournal {
 	}
 
 	public String extractDoi(String value) {
-		Matcher matcherForDoi = Pattern.compile("DOI:\\s*(\\S+)").matcher(value);
+		Matcher matcherForDoi = Pattern.compile(DOI_REGEX).matcher(value);
 
 		if (matcherForDoi.find()) {
 			return matcherForDoi.group(1);
@@ -172,21 +194,22 @@ public class ScrapMyJournal {
 		return "NA";
 	}
 
-	private void login(Map<String, Object> loginConfig) {
-		String loginForm = ((String) loginConfig.get("login_form_selector"));
-		String userIdSelector = ((String) loginConfig.get("username_selector"));
-		String paswordSelector = ((String) loginConfig.get("password_selector"));
-		String SubmitButtonSelector = ((String) loginConfig.get("submit_button_selector"));
-		String userId = (String) loginConfig.get("username-email");
-		String password = (String) loginConfig.get("password");
+	private void login(JSONObject journalConfig) {
+		JSONObject loginConfig = (JSONObject) journalConfig.get(LOGIN_CONFIG);
+		String loginForm = ((String) loginConfig.get(LOGIN_SELECTOR));
+		String userIdSelector = ((String) loginConfig.get(USERNAME_SELECTOR));
+		String paswordSelector = ((String) loginConfig.get(PASSWORD_SELECTOR));
+		String SubmitButtonSelector = ((String) loginConfig.get(SUBMIT_BTN_SELECTOR));
+		String userId = (String) loginConfig.get(USER_ID);
+		String password = (String) loginConfig.get(PASSWORD);
 
 		try {
-			Thread.sleep(3000);
+			Thread.sleep(deley);
 			selectorClick(loginForm);
 			selectorInput(userIdSelector, userId);
-			Thread.sleep(1000);
+			Thread.sleep(deley);
 			selectorInput(paswordSelector, password);
-			Thread.sleep(3000);
+			Thread.sleep(deley);
 			selectorClick(SubmitButtonSelector);
 
 			logger.info("inside login");
@@ -197,36 +220,38 @@ public class ScrapMyJournal {
 
 	}
 
-	public void selectorInput(String value, String text) {
-		String[] selector = value.split(" ");
+	public void selectorInput(String configValue, String text) {
+		String[] selector = configValue.split(SPLIT_BY);
 		if (selector[0].equals(ID))
 			driver.findElement(By.id(selector[1])).sendKeys(text);
+		else if (selector[0].equals(XPATH))
+			driver.findElement(By.xpath(selector[1])).sendKeys(text);
 		else if (selector[0].equals(CSS))
 			driver.findElement(By.cssSelector(selector[1])).sendKeys(text);
 		else
-			driver.findElement(By.xpath(selector[1])).sendKeys(text);
-
+			driver.findElement(By.className(selector[1])).sendKeys(text);
 	}
 
-	public void searchProduct(String searchConfig, String prodect) {
+	public void searchProduct(String searchConfig, String prodect) throws InterruptedException {
 		String[] search = searchConfig.split(" ");
-		logger.info("inside SearchProduct : {}",prodect);
-		
+		logger.info("inside SearchProduct : {}", prodect);
+
 		if (search[0].equalsIgnoreCase(ID)) {
 			driver.findElement(By.id(search[1])).sendKeys(prodect + Keys.ENTER);
-			logger.info("Seatching for product : {} using id",prodect);
+			logger.info("Seatching for product : {} using id", prodect);
 		} else if (search[0].equalsIgnoreCase(XPATH)) {
 			driver.findElement(By.xpath(search[1])).sendKeys(prodect + Keys.ENTER);
-			logger.info("Seatching for product : {} using xpath",prodect);
+			logger.info("Seatching for product : {} using xpath", prodect);
 
 		} else if (search[0].equalsIgnoreCase(CSS)) {
 			driver.findElement(By.cssSelector(search[1])).sendKeys(prodect + Keys.ENTER);
-			logger.info("Seatching for product : {} using css",prodect);
-		} else if(search[0].equalsIgnoreCase(CLASS)) {
+			logger.info("Seatching for product : {} using css", prodect);
+		} else if (search[0].equalsIgnoreCase(CLASS)) {
 			driver.findElement(By.className(search[1])).sendKeys(prodect + Keys.ENTER);
-			logger.info("Seatching for product : {} using className",prodect);
-			
+			logger.info("Seatching for product : {} using className", prodect);
 		}
+//		Thread.sleep(deley);
+//		driver.findElement(By.cssSelector("button[title='Search']")).click();
 
 	}
 
