@@ -19,6 +19,8 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.ChromiumDriver;
 
+import com.scrap.journal.service.SeleniumService;
+
 import io.github.bonigarcia.wdm.WebDriverManager;
 
 public class ScrapMyJournal implements ScrapperConfigKeys {
@@ -26,10 +28,19 @@ public class ScrapMyJournal implements ScrapperConfigKeys {
 	public static final Logger logger = LogManager.getLogger(ScrapMyJournal.class);
 
 	public static int deley = 3000;
+	public static int startingIndex = 1;
+	
 	Properties props = new Properties();
 	private WebDriver driver;
 	public static JSONObject jsonObject;
 
+	public static void main(String[] args) throws InterruptedException {
+//		ScrapMyJournal s = new ScrapMyJournal();
+		SeleniumService s = new SeleniumService(); 
+		s.startScraping();
+	}
+	
+	
 	void loadConfig() {
 		try {
 			// Load credentials and URL from JSON file
@@ -42,10 +53,6 @@ public class ScrapMyJournal implements ScrapperConfigKeys {
 		}
 	}
 
-	public static void main(String[] args) throws InterruptedException {
-		ScrapMyJournal s = new ScrapMyJournal();
-		s.startScraping();
-	}
 
 	public void startScraping() throws InterruptedException {
 		init();
@@ -56,9 +63,10 @@ public class ScrapMyJournal implements ScrapperConfigKeys {
 			JSONObject scrapingConfig = (JSONObject) journalConfig.get(SCRAPING_CONFIF);
 			int increaseInListPage = ((Long) scrapingConfig.get(INCREASE_PATTERN_IN_LIST_PAGE)).intValue();
 			try {
+				startingIndex = ((Long) scrapingConfig.get(STARTING_INDEX_FOR_LIST_PAGE)).intValue();
 				deley = ((Long) scrapingConfig.get(DELEY)).intValue();
 			} catch (Exception e) {
-				logger.error("error in getting deley value {}",e.getMessage());
+				logger.error("value is not specified in config usin default value {}",e.getMessage());
 			}
 			String url = (String) journalConfig.get(URL);
 			logger.info("Starting for {}", url);
@@ -75,7 +83,7 @@ public class ScrapMyJournal implements ScrapperConfigKeys {
 					Thread.sleep(deley);
 					searchProduct(searchPath, product);
 					Thread.sleep(deley);
-					List<String> results = extractSearchResults(resultsPath, 100, increaseInListPage);
+					List<String> results = extractSearchResults(resultsPath, 100, startingIndex, increaseInListPage);
 					logger.info(results);
 					logger.info("Got {} results ", results.size());
 					extractInfoFromResults(results, scrapingConfig);
@@ -119,10 +127,10 @@ public class ScrapMyJournal implements ScrapperConfigKeys {
 		return login;
 	}
 
-	public List<String> extractSearchResults(String listingXPath, int totalResults, int increasePattern) {
+	public List<String> extractSearchResults(String listingXPath, int totalResults, int startingIndex, int increasePattern) {
 		List<String> results = new ArrayList<>();
 
-		int j = 1;
+		int j = startingIndex;
 		for (int i = 0; i < totalResults; i++) {
 			try {
 				String link = driver.findElement(By.xpath(listingXPath.replace("${index}", String.valueOf(j))))

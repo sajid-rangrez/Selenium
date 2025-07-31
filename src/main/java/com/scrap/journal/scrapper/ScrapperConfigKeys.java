@@ -10,6 +10,7 @@ public interface ScrapperConfigKeys {
 	public static final String JOURNAL_CONFIG = "src/main/resources/journalConfig.json";
 	public static final String SCRAPING_CONFIF = "scraping_config";
 	public static final String INCREASE_PATTERN_IN_LIST_PAGE = "increase_pattern_in_list_page";
+	public static final String STARTING_INDEX_FOR_LIST_PAGE = "starting_index_for_list_page";
 	public static final String DELEY = "delay";
 	public static final String PRODUCTS = "products";
 	public static final String LOGIN = "login";

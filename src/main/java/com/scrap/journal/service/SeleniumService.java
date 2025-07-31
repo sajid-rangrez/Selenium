@@ -1,161 +1,323 @@
 package com.scrap.journal.service;
 
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chromium.ChromiumDriver;
 import org.springframework.stereotype.Service;
 
+import com.scrap.journal.scrapper.ScrapMyJournal;
+import com.scrap.journal.scrapper.ScrapperConfigKeys;
+
 import io.github.bonigarcia.wdm.WebDriverManager;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 
 @Service
-public class SeleniumService {
+public class SeleniumService implements ScrapperConfigKeys{
+
+	public static final Logger logger = LogManager.getLogger(ScrapMyJournal.class);
+
+	public static int deley = 3000;
+	public static int startingIndex = 1;
 	
-	public static void main(String[] args) throws InterruptedException {
-		SeleniumService s = new SeleniumService();
-		s.saudijournalOfAnesthesia();
+	Properties props = new Properties();
+	private WebDriver driver;
+	public static JSONObject jsonObject;
+
+	void loadConfig(String ConfigFilePath) {
+		try {
+			// Load credentials and URL from JSON file
+			JSONParser parser = new JSONParser();
+			jsonObject = (JSONObject) parser.parse(new FileReader(ConfigFilePath));
+			logger.info("Got Login json file, loading values..");
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Failed to load configuration ", e);
+		}
 	}
-	
-	
-	public void saudijournalOfAnesthesia() throws InterruptedException {
+
+
+	public void startScraping() throws InterruptedException {
+		init();
+		Map<String, Object> configs = (Map<String, Object>) jsonObject;
+//		for (Map.Entry<String, Object> entry : configs.entrySet()) {
+//			JSONObject journalConfig = (JSONObject) entry.getValue();
+		    JSONObject journalConfig = (JSONObject) configs.get("1");
+			JSONObject scrapingConfig = (JSONObject) journalConfig.get(SCRAPING_CONFIF);
+			int increaseInListPage = ((Long) scrapingConfig.get(INCREASE_PATTERN_IN_LIST_PAGE)).intValue();
+			try {
+				startingIndex = ((Long) scrapingConfig.get(STARTING_INDEX_FOR_LIST_PAGE)).intValue();
+				deley = ((Long) scrapingConfig.get(DELEY)).intValue();
+			} catch (Exception e) {
+				logger.error("value is not specified in config usin default value {}",e.getMessage());
+			}
+			String url = (String) journalConfig.get(URL);
+			logger.info("Starting for {}", url);
+			List<String> products = (List<String>) journalConfig.get(PRODUCTS);
+
+			Thread.sleep(deley);
+			boolean login = (boolean) journalConfig.get(LOGIN);
+			for (String product : products) {
+				try {
+					login = openJournal(url, login, journalConfig);
+					String searchPath = (String) scrapingConfig.get(SEARCH_INPUT_SELECTOR);
+					String resultsPath = (String) scrapingConfig.get(RESULT_SELECTOR);
+
+					Thread.sleep(deley);
+					searchProduct(searchPath, product);
+					Thread.sleep(deley);
+					List<String> results = extractSearchResults(resultsPath, 100, startingIndex, increaseInListPage);
+					logger.info(results);
+					logger.info("Got {} results ", results.size());
+					extractInfoFromResults(results, scrapingConfig);
+				} catch (Exception e) {
+					logger.error("Got error while scaraping product {} on {}", product, url);
+				}
+//			}
+		}
+	    if(driver != null) {
+	    	driver.quit();
+	    	logger.info("driver Quit");
+	    }
+		logger.info("Script complete!");
+	}
+
+	public void init() {
+//		ChromeOptions options = new ChromeOptions();
+//		options.addArguments("--headless=new");  // or "--headless" for older versions
+//		options.addArguments("--disable-gpu");   // Optional: better compatibility
+//		options.addArguments("--window-size=1920,1080");  
+//		driver = new ChromeDriver(options);
+		driver = new ChromeDriver();
 		WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
-        
-        driver.get("https://journals.lww.com/sjan/pages/default.aspx");
-        Thread.sleep(2000);
-        driver.findElement(By.xpath("/html/body/div[5]/div[2]/div/div/div[2]/div/div/button[2]")).click();
-        Thread.sleep(2000);
-        driver.findElement(By.id("ctl00_ctl51_Header_SearchTopBoxControl_txtKeywords")).sendKeys("Peracetamol"+Keys.ENTER);
-        Thread.sleep(3000);
-        //click on current ussue
-        WebElement element = driver.findElement(By.xpath("/html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div/div/div/div/div[1]/div[2]/section/div[2]/div[1]/div[2]/ul/li[9]/div/div/ul/li[2]/label"));
-        JavascriptExecutor js = (JavascriptExecutor) driver;
-        js.executeScript("arguments[0].scrollIntoView(true);", element);
-        js.executeScript("arguments[0].click();", element);
-        
-        Thread.sleep(3000);
-        
-        String totalResultString = driver.findElement(By.id("ctl00_ctl29_g_d7ffb995_7332_4a77_a0e7_695e0137e9d4_ctl00_ResultsStatus")).getText();
-        Pattern pattern = Pattern.compile("\\d+");
-        Matcher matcher = pattern.matcher(totalResultString);
-
-        int n = 0;
-        if (matcher.find()) {
-        	n = Integer.parseInt(matcher.group());
-            System.out.println("Extracted number: " + n);
-        } else {
-            System.out.println("No number found.");
-        }
-        if(n > 20 ) n = 20;
-        int j = 1;
-        List<String> searchResults = new ArrayList<>();
-        for(int i = 0; i < n; i++) {
-        	String link = driver.findElement(By.xpath("/html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div/div/div/div/div[1]/div[2]/section/div[2]/div[2]/div/span/div[1]/div["+j+"]/article/div/div[2]/ul[2]/li/div/a")).getAttribute("href");
-        	searchResults.add(link);
-        	j = j +2;	
-        }
-      
-        System.out.println(searchResults);
-        
-        for(String result: searchResults) {
-        	driver.get(result);
-        	Thread.sleep(5000);
-        	try {
-        		String doi  = driver.findElement(By.xpath("/html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[4]/div")).getText();
-        		
-                Matcher matcherForDoi = Pattern.compile("DOI:\\s*(\\S+)").matcher(doi);
-
-                if (matcherForDoi.find()) {
-                   doi = matcherForDoi.group(1);
-                } else {
-                    System.out.println("DOI not found.");
-                }
-                System.out.println("Doi : "+doi);
-        		
-        	} catch(Exception e) {
-        	
-        	}
-        	try {
-        		String title  = driver.findElement(By.xpath("/html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/header/h1")).getText();
-        		System.out.println("Title : "+title);
-        		
-        	} catch(Exception e) {
-        		
-        	}
-        	try {
-        		String Abstract  = driver.findElement(By.xpath("/html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[6]/div/div/div/p")).getText();
-        		System.out.println("Abstract : " +Abstract);
-        		
-        	} catch(Exception e) {
-        		
-        	}
-        	try {
-        		String authors  = driver.findElement(By.xpath("/html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[2]/p")).getText();
-        		System.out.println("Authors : "+authors);
-        		
-        	} catch(Exception e) {
-        		
-        	}	
-        	System.out.println("___________________________________________________________________________________________________________________________________");
-        }
+		driver.manage().window().maximize();
+		loadConfig(JOURNAL_CONFIG);
 	}
-	
-	
 
-    private WebDriver driver;
+	public boolean openJournal(String url, boolean login, JSONObject journalConfig) {
+		try {
+			driver.get(url);		
+		} catch(Exception e) {
+			logger.info("Something wrong with the website {}",url);
+			logger.error(e.getMessage());
+		}
+		try {
+			selectorClick((String) journalConfig.get(COOKIE_SELECTOR));
+		} catch (Exception e) {
+			logger.info("Config for Cookie popup not found or not configured");
+		}
+		if (login) {
+			login(journalConfig);
+			login = false;
+		}
+		return login;
+	}
 
-    @PostConstruct
-    public void setupDriver() {
-    	WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
-      
-    }
-    public String openJournal() {
-    	WebElement TargetElement;
-    	driver.get("https://onlinelibrary.wiley.com/index/3037");
-    	driver.findElement(By.xpath("/html/body/div[2]/div/div[2]/main/div/div/section/div/div/div/div[1]/div/div/div[2]/div/form/div/input[3]")).sendKeys("Fever" + Keys.ENTER);
-        
-    	
-    	return "done";
-    }
+	public List<String> extractSearchResults(String listingXPath, int totalResults, int startingIndex, int increasePattern) {
+		List<String> results = new ArrayList<>();
 
-    public String openGoogle() {
-    	WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
-        driver.get("https://www.linkedin.com");
-        WebElement element = driver.findElement(By.className("sign-in-form__sign-in-cta"));
-        element.click();
-        String email = "sifibe4560@dosonex.com";
-        String password = "alite123";
-        
-        element = driver.findElement(By.id("username"));
-        element.sendKeys(email);
-        element = driver.findElement(By.id("password"));
-        element.sendKeys(password);
-        
-        element = driver.findElement(By.className("login__form_action_container"));
-        element.click();
-        
-        WebElement search = driver.findElement(By.className("search-global-typeahead__input"));
-        search.sendKeys("Harman" + Keys.ENTER);
-        
-        
-        return driver.getTitle();
-    }
+		int j = startingIndex;
+		for (int i = 0; i < totalResults; i++) {
+			try {
+				String link = driver.findElement(By.xpath(listingXPath.replace("${index}", String.valueOf(j))))
+						.getAttribute(LINK_ATTRIBUTE);
+				results.add(link);
+				j = j + increasePattern;
+			} catch (Exception e) {
+				break;
+			}
+		}
+		return results;
+	}
 
-    @PreDestroy
-    public void closeDriver() {
-        if (driver != null) {
-            driver.quit();
-        }
-    }
+	public void extractInfoFromResults(List<String> results, Map<String, Object> scrapingConfig)
+			throws InterruptedException {
+		String doiConfig = (String) scrapingConfig.get(DOI_SELECTOR);
+		String titleConfig = (String) scrapingConfig.get(TITLE_SELECTOR);
+		String abstractConfig = (String) scrapingConfig.get(ABSTRACT_SELECTOR);
+		String authorsConfig = (String) scrapingConfig.get(AUTHORS_SELECTOR);
+		boolean extractDoi = (boolean) scrapingConfig.get(EXTRACT_DOI);
+
+		for (String result : results) {
+			driver.get(result);
+			Thread.sleep(deley);
+
+			try {
+				String doi = getText(doiConfig);
+				if (extractDoi)
+					doi = extractDoi(doi);
+				logger.info("Doi : " + doi);
+
+			} catch (Exception e) {
+				logger.info("Doi Not Found");
+			}
+
+			try {
+				String title = getText(titleConfig);
+				logger.info("Title : " + title);
+
+			} catch (Exception e) {
+				logger.error("Title not found.");
+			}
+			try {
+				String abstractText = getText(abstractConfig);
+				logger.info("Abstract : " + abstractText);
+
+			} catch (Exception e) {
+				logger.error("Abstract not found.");
+			}
+			try {
+				String authors = getText(authorsConfig);
+				logger.info("Authors : " + authors);
+			} catch (Exception e) {
+				logger.error("Authors not found.");
+			}
+			logger.info(
+					"___________________________________________________________________________________________________________________________________");
+		}
+	}
+
+	public String extractDoi(String value) {
+		Matcher matcherForDoi = Pattern.compile(DOI_REGEX).matcher(value);
+
+		if (matcherForDoi.find()) {
+			return matcherForDoi.group(1);
+		} else {
+			logger.error("DOI not found.");
+		}
+		return "NA";
+	}
+
+	private void login(JSONObject journalConfig) {
+		JSONObject loginConfig = (JSONObject) journalConfig.get(LOGIN_CONFIG);
+		String loginForm = ((String) loginConfig.get(LOGIN_SELECTOR));
+		String userIdSelector = ((String) loginConfig.get(USERNAME_SELECTOR));
+		String paswordSelector = ((String) loginConfig.get(PASSWORD_SELECTOR));
+		String SubmitButtonSelector = ((String) loginConfig.get(SUBMIT_BTN_SELECTOR));
+		String userId = (String) loginConfig.get(USER_ID);
+		String password = (String) loginConfig.get(PASSWORD);
+
+		try {
+			Thread.sleep(deley);
+			selectorClick(loginForm);
+			selectorInput(userIdSelector, userId);
+			Thread.sleep(deley);
+			selectorInput(paswordSelector, password);
+			Thread.sleep(deley);
+			selectorClick(SubmitButtonSelector);
+
+			logger.info("inside login");
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	public void selectorInput(String configValue, String text) {
+		String[] selector = configValue.split(SPLIT_BY);
+		if (selector[0].equals(ID))
+			driver.findElement(By.id(selector[1])).sendKeys(text);
+		else if (selector[0].equals(XPATH))
+			driver.findElement(By.xpath(selector[1])).sendKeys(text);
+		else if (selector[0].equals(CSS))
+			driver.findElement(By.cssSelector(selector[1])).sendKeys(text);
+		else
+			driver.findElement(By.className(selector[1])).sendKeys(text);
+	}
+
+	public void searchProduct(String searchConfig, String prodect) throws InterruptedException {
+		String[] search = searchConfig.split(" ");
+		logger.info("inside SearchProduct : {}", prodect);
+		if(search.length == 3) {
+			if (search[0].equalsIgnoreCase(ID)) {
+				selectorClick(search[0]+" "+search[1]);
+				driver.findElement(By.id(search[2])).sendKeys(prodect + Keys.ENTER);
+			} else if (search[0].equalsIgnoreCase(XPATH)) {
+				selectorClick(search[0]+" "+search[1]);
+				driver.findElement(By.xpath(search[2])).sendKeys(prodect + Keys.ENTER);
+				
+			} else if (search[0].equalsIgnoreCase(CSS)) {
+				selectorClick(search[0]+" "+search[1]);
+				driver.findElement(By.cssSelector(search[2])).sendKeys(prodect + Keys.ENTER);
+			} else if (search[0].equalsIgnoreCase(CLASS)) {
+				selectorClick(search[0]+" "+search[1]);
+				driver.findElement(By.className(search[2])).sendKeys(prodect + Keys.ENTER);
+			}
+			logger.info("Seatching for product : {} using {}", prodect, search[0]);
+		} else {
+			if (search[0].equalsIgnoreCase(ID)) {
+				driver.findElement(By.id(search[1])).sendKeys(prodect + Keys.ENTER);
+			} else if (search[0].equalsIgnoreCase(XPATH)) {
+				driver.findElement(By.xpath(search[1])).sendKeys(prodect + Keys.ENTER);
+			} else if (search[0].equalsIgnoreCase(CSS)) {
+				driver.findElement(By.cssSelector(search[1])).sendKeys(prodect + Keys.ENTER);
+			} else if (search[0].equalsIgnoreCase(CLASS)) {
+				driver.findElement(By.className(search[1])).sendKeys(prodect + Keys.ENTER);
+			}	
+			logger.info("Seatching for product : {} using {}", prodect, search[0]);
+		}
+
+//		Thread.sleep(deley);
+//		driver.findElement(By.cssSelector("button[title='Search']")).click();
+
+	}
+
+	public String getText(String value) {
+		String[] selector = value.split(" ");
+		if (selector[0].equals(ID))
+			return driver.findElement(By.id(selector[1])).getText();
+		else if (selector[0].equals(CSS))
+			return driver.findElement(By.cssSelector(selector[1])).getText();
+		else
+			return driver.findElement(By.xpath(selector[1])).getText();
+
+	}
+
+	public void selectorClick(String value) throws InterruptedException {
+		String[] selector = value.split(" ");
+		try {
+			if (selector[0].equals(ID)) {
+				driver.findElement(By.id(selector[1])).click();
+				logger.info("inside try for id");
+			} else if (selector[0].equals(CSS)) {
+				driver.findElement(By.cssSelector(selector[1])).click();
+				logger.info("inside try for css");
+			} else if (selector[0].equals(CLASS)) {
+				driver.findElement(By.className(selector[1])).click();
+				logger.info("inside try for class");
+			} else {
+				driver.findElement(By.xpath(selector[1])).click();
+				logger.info("inside try for xpath");
+			}
+		} catch (Exception e) {
+			if (selector[0].equals(ID)) {
+				((ChromiumDriver) driver).executeScript("arguments[0].click();",
+						driver.findElement(By.id(selector[1])));
+				logger.info("inside catch for id");
+			} else if (selector[0].equals(CSS)) {
+				((ChromiumDriver) driver).executeScript("arguments[0].click();",
+						driver.findElement(By.cssSelector(selector[1])));
+				logger.info("inside catch for css");
+			} else {
+				((ChromiumDriver) driver).executeScript("arguments[0].click();",
+						driver.findElement(By.xpath(selector[1])));
+				logger.info("inside catch for xpath");
+			}
+		}
+		Thread.sleep(deley);
+	}
+
 }

@@ -1,5 +1,5 @@
 {
-	"jour1":{
+	"1":{
 		"name" : "",
 		"url" : "",
 		"products": ["paracetamol", "ibuprofen"],
@@ -16,6 +16,7 @@
 		    "search_url": "",
 		    "search_input_selector": "",
 		    "increase_pattern_in_list_page":2,
+		    "starting_index_for_list_page":1,
 		    "results_selector": "",
 		    "title_selector": "",
 		    "abstract_selector": "",
@@ -42,6 +43,7 @@
 		    "search_url": "",
 		    "search_input_selector": "css input[type='search']",
 		    "increase_pattern_in_list_page":2,
+		    "starting_index_for_list_page":1,
 		    "results_selector": "",
 		    "title_selector": "",
 		    "abstract_selector": "",

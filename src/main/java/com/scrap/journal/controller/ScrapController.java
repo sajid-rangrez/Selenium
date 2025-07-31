@@ -13,8 +13,9 @@ public class ScrapController {
     private SeleniumService seleniumService;
 	
     @GetMapping("/run")
-    public String runSeleniumTest() {
-        return seleniumService.openJournal();
+    public String runSeleniumTest() throws InterruptedException {
+    	seleniumService.startScraping();
+        return "";
     }
 
 }
