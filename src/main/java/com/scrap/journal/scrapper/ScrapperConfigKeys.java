@@ -7,8 +7,13 @@ public interface ScrapperConfigKeys {
 	public static final String CSS = "css";
 	public static final String CLASS = "class";
 	public static final String XPATH = "xpath";
-	public static final String JOURNAL_CONFIG = "src/main/resources/journalConfig.json";
+//	public static final String JOURNAL_CONFIG = "src/main/resources/journalConfig.json";
+	public static final String JOURNAL_CONFIG = "src/main/resources/configfiles/saudi_Journal_of_anaesthesiaConfig.json";
+	public static final String ENV_PROPERTIES = "src/main/resources/env.properties";
+	public static final String CONFIG_DIRECTORY = "scrapper.config.directory";
 	public static final String SCRAPING_CONFIF = "scraping_config";
+	public static final String APPLY_FILTER = "apply_filter";
+	public static final String FILTER_CONFIG = "filter_config";
 	public static final String INCREASE_PATTERN_IN_LIST_PAGE = "increase_pattern_in_list_page";
 	public static final String STARTING_INDEX_FOR_LIST_PAGE = "starting_index_for_list_page";
 	public static final String DELEY = "delay";

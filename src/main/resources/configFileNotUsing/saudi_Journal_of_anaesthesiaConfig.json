@@ -1,0 +1,34 @@
+{
+	"name": "",
+	"url": "https://journals.lww.com/sjan/pages/default.aspx",
+	"products": [
+		"paracetamol",
+		"ibuprofen"
+	],
+	"login": false,
+	"cookie_selector": "xpath /html/body/div[5]/div[2]/div/div/div[2]/div/div/button[2]",
+	"login_config": {
+		"login_form_selector": "xpath /html/body/form/div[5]/div/header/div/div[1]/section/ul/li[1]/button",
+		"username_selector": "css input[name='userName']",
+		"password_selector": "css input[name='password']",
+		"submit_button_selector": "class ejp-login-content__submit-btn",
+		"username-email": "felad26297@ikanteri.com",
+		"password": "alite123"
+	},
+	"apply_filter":true,
+	"filter_config":{
+	
+	},
+	"scraping_config": {
+		"search_url": "",
+		"search_input_selector": "css input[value='Search']",
+		"increase_pattern_in_list_page": 2,
+		"results_selector": "/html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div/div/div/div/div[1]/div[2]/section/div[2]/div[2]/div/span/div[1]/div[${index}]/article/div/div[2]/ul[2]/li/div/a",
+		"title_selector": "css h1[class='ejp-article-title']",
+		"abstract_selector": "xpath /html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[6]/div/div/div/p",
+		"authors_selector": "xpath /html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[2]/p",
+		"doi_selector": "xpath /html/body/form/div[5]/div/div/div[4]/div[1]/div[3]/div/div[1]/div/div/div/div/div[1]/div[1]/div[5]/article/section[4]/div",
+		"extract_doi_from_text": true,
+		"delay": 3000
+	}
+}

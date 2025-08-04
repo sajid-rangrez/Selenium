@@ -1,56 +1,64 @@
 {
-	"1":{
-		"name" : "",
-		"url" : "",
-		"products": ["paracetamol", "ibuprofen"],
-		"login" : false ,
-		"login_config" : {
-			"login_form_selector" : "",
-			"username_selector" : "",
-			"password_selector" : "",
-			"submit_button_selector" : "",
-			"username-email" : "",
-			"password" : ""
+	"1": {
+		"name": "",
+		"url": "",
+		"products": [
+			"paracetamol",
+			"ibuprofen"
+		],
+		"login": false,
+		"login_config": {
+			"login_form_selector": "",
+			"username_selector": "",
+			"password_selector": "",
+			"submit_button_selector": "",
+			"username-email": "",
+			"password": ""
 		},
+		"apply_filter": true,
+		"filter_config": {},
 		"scraping_config": {
-		    "search_url": "",
-		    "search_input_selector": "",
-		    "increase_pattern_in_list_page":2,
-		    "starting_index_for_list_page":1,
-		    "results_selector": "",
-		    "title_selector": "",
-		    "abstract_selector": "",
-		    "authors_selector": "",
-		    "doi_selector":"",
-		    "extract_doi_from_text":true,
-		    "delay": 3
-	  }
+			"search_url": "",
+			"search_input_selector": "",
+			"increase_pattern_in_list_page": 2,
+			"starting_index_for_list_page": 1,
+			"results_selector": "",
+			"title_selector": "",
+			"abstract_selector": "",
+			"authors_selector": "",
+			"doi_selector": "",
+			"extract_doi_from_text": true,
+			"delay": 3
+		}
 	},
-	"4":{
-		"name" : "example of human verification",
-		"url" : "https://onlinelibrary.wiley.com/index/3037",
-		"products": ["paracetamol", "ibuprofen"],
-		"login" : false ,
-		"login_config" : {
-			"login_form_selector" : "",
-			"username_selector" : "",
-			"password_selector" : "",
-			"submit_button_selector" : "",
-			"username-email" : "",
-			"password" : ""
+	"4": {
+		"name": "example of human verification",
+		"url": "https://onlinelibrary.wiley.com/index/3037",
+		"products": [
+			"paracetamol",
+			"ibuprofen"
+		],
+		"login": false,
+		"login_config": {
+			"login_form_selector": "",
+			"username_selector": "",
+			"password_selector": "",
+			"submit_button_selector": "",
+			"username-email": "",
+			"password": ""
 		},
 		"scraping_config": {
-		    "search_url": "",
-		    "search_input_selector": "css input[type='search']",
-		    "increase_pattern_in_list_page":2,
-		    "starting_index_for_list_page":1,
-		    "results_selector": "",
-		    "title_selector": "",
-		    "abstract_selector": "",
-		    "authors_selector": "",
-		    "doi_selector":"",
-		    "extract_doi_from_text":true,
-		    "delay": 3
-	  }
+			"search_url": "",
+			"search_input_selector": "css input[type='search']",
+			"increase_pattern_in_list_page": 2,
+			"starting_index_for_list_page": 1,
+			"results_selector": "",
+			"title_selector": "",
+			"abstract_selector": "",
+			"authors_selector": "",
+			"doi_selector": "",
+			"extract_doi_from_text": true,
+			"delay": 3
+		}
 	}
 }

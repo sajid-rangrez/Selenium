@@ -212,6 +212,7 @@ public class ScrapMyJournal implements ScrapperConfigKeys {
 		String password = (String) loginConfig.get(PASSWORD);
 
 		try {
+			logger.info("inside login");
 			Thread.sleep(deley);
 			selectorClick(loginForm);
 			selectorInput(userIdSelector, userId);
@@ -220,9 +221,9 @@ public class ScrapMyJournal implements ScrapperConfigKeys {
 			Thread.sleep(deley);
 			selectorClick(SubmitButtonSelector);
 
-			logger.info("inside login");
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
+			logger.error("got error while login");
 			e.printStackTrace();
 		}
 
@@ -246,17 +247,17 @@ public class ScrapMyJournal implements ScrapperConfigKeys {
 
 		if (search[0].equalsIgnoreCase(ID)) {
 			driver.findElement(By.id(search[1])).sendKeys(prodect + Keys.ENTER);
-			logger.info("Seatching for product : {} using id", prodect);
+			logger.info("Searching for product : {} using id", prodect);
 		} else if (search[0].equalsIgnoreCase(XPATH)) {
 			driver.findElement(By.xpath(search[1])).sendKeys(prodect + Keys.ENTER);
-			logger.info("Seatching for product : {} using xpath", prodect);
+			logger.info("Searching for product : {} using xpath", prodect);
 
 		} else if (search[0].equalsIgnoreCase(CSS)) {
 			driver.findElement(By.cssSelector(search[1])).sendKeys(prodect + Keys.ENTER);
-			logger.info("Seatching for product : {} using css", prodect);
+			logger.info("Searching for product : {} using css", prodect);
 		} else if (search[0].equalsIgnoreCase(CLASS)) {
 			driver.findElement(By.className(search[1])).sendKeys(prodect + Keys.ENTER);
-			logger.info("Seatching for product : {} using className", prodect);
+			logger.info("Searching for product : {} using className", prodect);
 		}
 //		Thread.sleep(deley);
 //		driver.findElement(By.cssSelector("button[title='Search']")).click();

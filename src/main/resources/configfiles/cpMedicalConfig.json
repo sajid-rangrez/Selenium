@@ -1,0 +1,32 @@
+{
+	"name": "",
+	"url": "https://cp-medical.com/index.php/journal",
+	"products": [
+		"covid",
+		"ibuprofen"
+	],
+	"login": false,
+	"login_config": {
+		"login_form_selector": "",
+		"username_selector": "",
+		"password_selector": "",
+		"submit_button_selector": "",
+		"username-email": "",
+		"password": ""
+	},
+	"apply_filter": false,
+	"filter_config": {},
+	"scraping_config": {
+		"search_url": "",
+		"search_input_selector": "xpath /html/body/header/div/nav/div/ul[1]/li[7]/a /html/body/div[1]/div[2]/div[2]/div/form/div[1]/input",
+		"increase_pattern_in_list_page": 1,
+		"starting_index_for_list_page": 1,
+		"results_selector": "/html/body/div[1]/div[2]/div[1]/div/div[${index}]/div[2]/a",
+		"title_selector": "css .article-details-fulltitle",
+		"abstract_selector": "css .article-details-abstract",
+		"authors_selector": "css .authors-string",
+		"doi_selector": "css .article-details-doi",
+		"extract_doi_from_text": false,
+		"delay": 1000
+	}
+}

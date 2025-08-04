@@ -1,116 +1,179 @@
 package com.scrap.journal.service;
 
+import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.ChromiumDriver;
-import org.springframework.stereotype.Service;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.stereotype.Component;
 
-import com.scrap.journal.scrapper.ScrapMyJournal;
 import com.scrap.journal.scrapper.ScrapperConfigKeys;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 
-@Service
-public class SeleniumService implements ScrapperConfigKeys{
+@Component
+public class SeleniumService implements ScrapperConfigKeys {
 
-	public static final Logger logger = LogManager.getLogger(ScrapMyJournal.class);
+	public static final Logger logger = LogManager.getLogger(SeleniumService.class);
 
 	public static int deley = 3000;
 	public static int startingIndex = 1;
-	
-	Properties props = new Properties();
+
 	private WebDriver driver;
 	public static JSONObject jsonObject;
+	private static String configDirectory;
 
-	void loadConfig(String ConfigFilePath) {
+	public static void main(String[] args) throws InterruptedException {
+		SeleniumService s = new SeleniumService();
+		s.startScraping();
+	}
+
+	private JSONObject loadConfig(String ConfigFilePath) {
 		try {
 			// Load credentials and URL from JSON file
 			JSONParser parser = new JSONParser();
 			jsonObject = (JSONObject) parser.parse(new FileReader(ConfigFilePath));
 			logger.info("Got Login json file, loading values..");
+			return jsonObject;
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("Failed to load configuration ", e);
 		}
 	}
 
-
 	public void startScraping() throws InterruptedException {
 		init();
-		Map<String, Object> configs = (Map<String, Object>) jsonObject;
-//		for (Map.Entry<String, Object> entry : configs.entrySet()) {
-//			JSONObject journalConfig = (JSONObject) entry.getValue();
-		    JSONObject journalConfig = (JSONObject) configs.get("1");
+		for (String configFilePath : loadConfigFiles()) {
+			// loading configurations
+			JSONObject journalConfig = loadConfig(configFilePath);
 			JSONObject scrapingConfig = (JSONObject) journalConfig.get(SCRAPING_CONFIF);
+			JSONObject filterConfig = (JSONObject) journalConfig.get(FILTER_CONFIG);
+			List<String> products = (List<String>) journalConfig.get(PRODUCTS);
+			
+			boolean login = (boolean) journalConfig.get(LOGIN);
+			boolean applyFiltes = (boolean) journalConfig.get(APPLY_FILTER);
+
 			int increaseInListPage = ((Long) scrapingConfig.get(INCREASE_PATTERN_IN_LIST_PAGE)).intValue();
 			try {
 				startingIndex = ((Long) scrapingConfig.get(STARTING_INDEX_FOR_LIST_PAGE)).intValue();
 				deley = ((Long) scrapingConfig.get(DELEY)).intValue();
 			} catch (Exception e) {
-				logger.error("value is not specified in config usin default value {}",e.getMessage());
+				logger.error("value is not specified in config usin default value {}", e.getMessage());
 			}
 			String url = (String) journalConfig.get(URL);
 			logger.info("Starting for {}", url);
-			List<String> products = (List<String>) journalConfig.get(PRODUCTS);
-
 			Thread.sleep(deley);
-			boolean login = (boolean) journalConfig.get(LOGIN);
+
+			// searching for each product in given journal
 			for (String product : products) {
 				try {
-					login = openJournal(url, login, journalConfig);
+					try {
+						login = openJournal(url, login, journalConfig);
+					} catch (Exception e) {
+						logger.error("Got error while login {}", e.getMessage());
+					}
 					String searchPath = (String) scrapingConfig.get(SEARCH_INPUT_SELECTOR);
 					String resultsPath = (String) scrapingConfig.get(RESULT_SELECTOR);
 
 					Thread.sleep(deley);
 					searchProduct(searchPath, product);
 					Thread.sleep(deley);
+					// Apply filters
+					if(applyFiltes) {
+						applyFilters(filterConfig);
+					}
+					Thread.sleep(deley);
 					List<String> results = extractSearchResults(resultsPath, 100, startingIndex, increaseInListPage);
 					logger.info(results);
 					logger.info("Got {} results ", results.size());
 					extractInfoFromResults(results, scrapingConfig);
 				} catch (Exception e) {
-					logger.error("Got error while scaraping product {} on {}", product, url);
+					logger.error("Got error while scaraping product {} on {}, {}", product, url, e.getMessage());
 				}
-//			}
+			}
 		}
-	    if(driver != null) {
-	    	driver.quit();
-	    	logger.info("driver Quit");
-	    }
+		if (driver != null) {
+			driver.quit();
+			logger.info("driver Quit");
+		}
 		logger.info("Script complete!");
 	}
 
+	private void applyFilters(JSONObject filterConfig) {
+		try {
+			 WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+		        // 1. Click the visible selectize input to open dropdown
+		        WebElement dropdownInput = wait.until(ExpectedConditions.elementToBeClickable(
+		            By.cssSelector("div[class='selectize-input items full has-options has-items focus']")
+		        ));
+		        dropdownInput.click();
+
+		        // 2. Wait for dropdown options to be visible
+		        WebElement optionNewest = wait.until(ExpectedConditions.visibilityOfElementLocated(
+		            By.xpath("//div[@class='selectize-dropdown-content']/div[@data-value='Newest']")
+		        ));
+
+		        // 3. Click the "Newest" option
+		        optionNewest.click();
+
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	public void init() {
-//		ChromeOptions options = new ChromeOptions();
+		ChromeOptions options = new ChromeOptions();
 //		options.addArguments("--headless=new");  // or "--headless" for older versions
-//		options.addArguments("--disable-gpu");   // Optional: better compatibility
-//		options.addArguments("--window-size=1920,1080");  
-//		driver = new ChromeDriver(options);
-		driver = new ChromeDriver();
+		options.addArguments("--disable-gpu");   // Optional: better compatibility
+		options.addArguments("--window-size=1920,1080");  
+		driver = new ChromeDriver(options);
+//		driver = new ChromeDriver();
 		WebDriverManager.chromedriver().setup();
 		driver.manage().window().maximize();
-		loadConfig(JOURNAL_CONFIG);
+        Properties prop = new Properties();
+        
+        if(configDirectory == null) {
+        	try {
+        		prop.load(new FileInputStream(ENV_PROPERTIES));
+        		configDirectory = prop.getProperty(CONFIG_DIRECTORY);
+        	} catch (IOException e) {
+        		e.printStackTrace();
+        	}	
+        }
 	}
 
 	public boolean openJournal(String url, boolean login, JSONObject journalConfig) {
 		try {
-			driver.get(url);		
-		} catch(Exception e) {
-			logger.info("Something wrong with the website {}",url);
+			driver.get(url);
+		} catch (Exception e) {
+			logger.info("Something wrong with the website {}", url);
 			logger.error(e.getMessage());
 		}
 		try {
@@ -125,7 +188,8 @@ public class SeleniumService implements ScrapperConfigKeys{
 		return login;
 	}
 
-	public List<String> extractSearchResults(String listingXPath, int totalResults, int startingIndex, int increasePattern) {
+	public List<String> extractSearchResults(String listingXPath, int totalResults, int startingIndex,
+			int increasePattern) {
 		List<String> results = new ArrayList<>();
 
 		int j = startingIndex;
@@ -136,13 +200,14 @@ public class SeleniumService implements ScrapperConfigKeys{
 				results.add(link);
 				j = j + increasePattern;
 			} catch (Exception e) {
+				logger.error("Got error while extracting article in from listing page. {}", e.getMessage());
 				break;
 			}
 		}
 		return results;
 	}
 
-	public void extractInfoFromResults(List<String> results, Map<String, Object> scrapingConfig)
+	public void extractInfoFromResults(List<String> articleList, Map<String, Object> scrapingConfig)
 			throws InterruptedException {
 		String doiConfig = (String) scrapingConfig.get(DOI_SELECTOR);
 		String titleConfig = (String) scrapingConfig.get(TITLE_SELECTOR);
@@ -150,10 +215,10 @@ public class SeleniumService implements ScrapperConfigKeys{
 		String authorsConfig = (String) scrapingConfig.get(AUTHORS_SELECTOR);
 		boolean extractDoi = (boolean) scrapingConfig.get(EXTRACT_DOI);
 
-		for (String result : results) {
+		for (String result : articleList) {
 			driver.get(result);
+			logger.info("Scrapping the article {}", result);
 			Thread.sleep(deley);
-
 			try {
 				String doi = getText(doiConfig);
 				if (extractDoi)
@@ -210,20 +275,19 @@ public class SeleniumService implements ScrapperConfigKeys{
 		String password = (String) loginConfig.get(PASSWORD);
 
 		try {
+			logger.info("inside login");
 			Thread.sleep(deley);
 			selectorClick(loginForm);
+			Thread.sleep(deley);
 			selectorInput(userIdSelector, userId);
 			Thread.sleep(deley);
 			selectorInput(paswordSelector, password);
 			Thread.sleep(deley);
 			selectorClick(SubmitButtonSelector);
-
-			logger.info("inside login");
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
+			logger.error("got error while login");
 			e.printStackTrace();
 		}
-
 	}
 
 	public void selectorInput(String configValue, String text) {
@@ -241,22 +305,22 @@ public class SeleniumService implements ScrapperConfigKeys{
 	public void searchProduct(String searchConfig, String prodect) throws InterruptedException {
 		String[] search = searchConfig.split(" ");
 		logger.info("inside SearchProduct : {}", prodect);
-		if(search.length == 3) {
+		if (search.length == 3) {
 			if (search[0].equalsIgnoreCase(ID)) {
-				selectorClick(search[0]+" "+search[1]);
+				selectorClick(search[0] + " " + search[1]);
 				driver.findElement(By.id(search[2])).sendKeys(prodect + Keys.ENTER);
 			} else if (search[0].equalsIgnoreCase(XPATH)) {
-				selectorClick(search[0]+" "+search[1]);
+				selectorClick(search[0] + " " + search[1]);
 				driver.findElement(By.xpath(search[2])).sendKeys(prodect + Keys.ENTER);
-				
+
 			} else if (search[0].equalsIgnoreCase(CSS)) {
-				selectorClick(search[0]+" "+search[1]);
+				selectorClick(search[0] + " " + search[1]);
 				driver.findElement(By.cssSelector(search[2])).sendKeys(prodect + Keys.ENTER);
 			} else if (search[0].equalsIgnoreCase(CLASS)) {
-				selectorClick(search[0]+" "+search[1]);
+				selectorClick(search[0] + " " + search[1]);
 				driver.findElement(By.className(search[2])).sendKeys(prodect + Keys.ENTER);
 			}
-			logger.info("Seatching for product : {} using {}", prodect, search[0]);
+			logger.info("Searching for product : {} using {}", prodect, search[0]);
 		} else {
 			if (search[0].equalsIgnoreCase(ID)) {
 				driver.findElement(By.id(search[1])).sendKeys(prodect + Keys.ENTER);
@@ -266,8 +330,8 @@ public class SeleniumService implements ScrapperConfigKeys{
 				driver.findElement(By.cssSelector(search[1])).sendKeys(prodect + Keys.ENTER);
 			} else if (search[0].equalsIgnoreCase(CLASS)) {
 				driver.findElement(By.className(search[1])).sendKeys(prodect + Keys.ENTER);
-			}	
-			logger.info("Seatching for product : {} using {}", prodect, search[0]);
+			}
+			logger.info("Searching for product : {} using {}", prodect, search[0]);
 		}
 
 //		Thread.sleep(deley);
@@ -319,5 +383,20 @@ public class SeleniumService implements ScrapperConfigKeys{
 		}
 		Thread.sleep(deley);
 	}
+	public List<String> loadConfigFiles(){
+		
+		List<String> files = new ArrayList<>();
+		Path directoryPath = Paths.get(configDirectory);
 
+        try (Stream<Path> paths = Files.walk(directoryPath)) {
+        	files = paths
+                    .filter(Files::isRegularFile)
+                    .map(path -> configDirectory+path.getFileName().toString())
+                    .collect(Collectors.toList());
+//            fileNames.forEach(System.out::println);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return files;
+	}
 }

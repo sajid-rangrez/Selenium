@@ -1,0 +1,30 @@
+{
+	"name": "minerva",
+	"url": "https://minerva-ebp.be/",
+	"products": [
+		"paracetamol",
+		"ibuprofen"
+	],
+	"login": false,
+	"cookie_selector": "",
+	"login_config": {
+		"login_form_selector": "",
+		"username_selector": "",
+		"password_selector": "",
+		"submit_button_selector": "",
+		"username-email": "",
+		"password": ""
+	},
+	"scraping_config": {
+		"search_input_selector": "xpath /html/body/div/div[2]/section/div[1]/div[1]/form/input[1]",
+		"increase_pattern_in_list_page": 1,
+		"starting_index_for_list_page":2,
+		"results_selector": "/html/body/div/div[2]/section/form/div[${index}]/div[1]/h2/a",
+		"title_selector": "css h1[class='MinervaArticleTitel']",
+		"abstract_selector": "id minervamainhtml",
+		"authors_selector": "xpath /html/body/div/div[2]/section/section[1]/div[2]/div[2]",
+		"doi_selector": "xpath /html/body/div/div[2]/section/section[1]/div[2]/div[2]",
+		"extract_doi_from_text": true,
+		"delay": 3000
+	}
+}

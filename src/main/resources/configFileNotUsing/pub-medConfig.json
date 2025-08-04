@@ -1,0 +1,28 @@
+{
+	"name": "",
+	"url": "https://pubmed.ncbi.nlm.nih.gov",
+	"products": [
+		"paracetamol",
+		"ibuprofen"
+	],
+	"login": false,
+	"login_config": {
+		"login_form_selector": "xpath /html/body/form/div[5]/div/header/div/div[1]/section/ul/li[1]/button/span",
+		"username_selector": "xpath /html/body/div[6]/div/div/div[2]/div/div[2]/div/form/wk-input/render-target/div/div[2]/slot/input",
+		"password_selector": "xpath /html/body/div[6]/div/div/div[2]/div/div[2]/div/form/wk-password-input/render-target/div/div[2]/slot/input",
+		"submit_button_selector": "xpath /html/body/div[6]/div/div/div[2]/div/div[2]/div/form/input",
+		"username-email": "felad26297@ikanteri.com",
+		"password": ""
+	},
+	"scraping_config": {
+		"search_input_selector": "id id_term",
+		"increase_pattern_in_list_page": 1,
+		"results_selector": "/html/body/main/div[9]/div[2]/section/div[2]/div/article[${index}]/div[2]/div[1]/a",
+		"title_selector": "css h1[class='heading-title']",
+		"abstract_selector": "id eng-abstract",
+		"authors_selector": "xpath /html/body/div[5]/main/header/div[1]/div[2]/div/div",
+		"doi_selector": "css a[data-ga-action='DOI']",
+		"extract_doi_from_text": false,
+		"delay": 3000
+	}
+}
