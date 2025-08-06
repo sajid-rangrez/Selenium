@@ -1,4 +1,4 @@
-package com.scrap.journal.scrapper;
+package com.journal.scrap.scrapper;
 
 import java.io.IOException;
 import java.nio.file.Files;

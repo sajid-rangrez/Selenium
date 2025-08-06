@@ -1,6 +1,6 @@
 {
 	"name": "",
-	"url": "https://ebwhj.journals.ekb.eg/",
+	"url": "https://amj.journals.ekb.eg/",
 	"products": [
 		"paracetamol",
 		"ibuprofen"
@@ -14,6 +14,8 @@
 		"username-email": "",
 		"password": ""
 	},
+	"apply_filter": false,
+	"filter_config": {},
 	"scraping_config": {
 		"search_url": "",
 		"search_input_selector": "xpath /html/body/div[4]/div/div[1]/div[3]/div[2]/div[2]/div[1]/form/input[2]",

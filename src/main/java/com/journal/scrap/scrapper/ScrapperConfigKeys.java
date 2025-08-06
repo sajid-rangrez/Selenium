@@ -1,8 +1,9 @@
-package com.scrap.journal.scrapper;
+package com.journal.scrap.scrapper;
 
 public interface ScrapperConfigKeys {
 
 	public static final String URL = "url";
+	public static final String JOURNAL_NAME = "name";
 	public static final String ID = "id";
 	public static final String CSS = "css";
 	public static final String CLASS = "class";

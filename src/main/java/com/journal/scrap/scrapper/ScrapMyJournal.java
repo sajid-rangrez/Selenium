@@ -1,4 +1,4 @@
-package com.scrap.journal.scrapper;
+package com.journal.scrap.scrapper;
 
 import java.io.FileReader;
 import java.util.ArrayList;
@@ -19,7 +19,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.ChromiumDriver;
 
-import com.scrap.journal.service.SeleniumService;
+import com.journal.scrap.service.SeleniumService;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 

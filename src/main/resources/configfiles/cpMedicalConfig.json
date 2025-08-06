@@ -1,5 +1,5 @@
 {
-	"name": "",
+	"name": "Clinical and preventive medicine",
 	"url": "https://cp-medical.com/index.php/journal",
 	"products": [
 		"covid",
@@ -27,6 +27,6 @@
 		"authors_selector": "css .authors-string",
 		"doi_selector": "css .article-details-doi",
 		"extract_doi_from_text": false,
-		"delay": 1000
+		"delay": 3000
 	}
 }

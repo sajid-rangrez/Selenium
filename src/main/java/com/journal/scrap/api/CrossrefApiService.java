@@ -1,4 +1,4 @@
-package com.scrap.journal.api;
+package com.journal.scrap.api;
 
 import java.net.URI;
 import java.net.http.HttpClient;

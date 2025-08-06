@@ -1,4 +1,4 @@
-package com.scrap.journal.service;
+package com.journal.scrap.service;
 
 import java.io.FileInputStream;
 import java.io.FileReader;
@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,19 +20,19 @@ import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.ChromiumDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.Select;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.scrap.journal.scrapper.ScrapperConfigKeys;
+import com.journal.scrap.dao.JournalApiService;
+import com.journal.scrap.entities.Article;
+import com.journal.scrap.entities.Journal;
+import com.journal.scrap.entities.Product;
+import com.journal.scrap.scrapper.ScrapperConfigKeys;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 
@@ -41,6 +40,10 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 public class SeleniumService implements ScrapperConfigKeys {
 
 	public static final Logger logger = LogManager.getLogger(SeleniumService.class);
+	
+	@Autowired
+	private JournalApiService crudService;
+	
 
 	public static int deley = 3000;
 	public static int startingIndex = 1;
@@ -87,8 +90,13 @@ public class SeleniumService implements ScrapperConfigKeys {
 				logger.error("value is not specified in config usin default value {}", e.getMessage());
 			}
 			String url = (String) journalConfig.get(URL);
+			String name = (String) journalConfig.get(JOURNAL_NAME);
 			logger.info("Starting for {}", url);
 			Thread.sleep(deley);
+			
+			Journal journal = new Journal();
+			journal.setUrl(url);
+			journal.setName(name);
 
 			// searching for each product in given journal
 			for (String product : products) {
@@ -112,7 +120,15 @@ public class SeleniumService implements ScrapperConfigKeys {
 					List<String> results = extractSearchResults(resultsPath, 100, startingIndex, increaseInListPage);
 					logger.info(results);
 					logger.info("Got {} results ", results.size());
-					extractInfoFromResults(results, scrapingConfig);
+					List<Article> articles = extractInfoFromResults(results, scrapingConfig, journal);
+					
+					Product prod = new Product();
+					prod.setName(product);
+					Long productId = crudService.saveProduct(prod);
+					articles.stream()
+					.forEach(article -> article.setProductId(productId));
+					crudService.saveArticles(articles);
+//					prod.setArticles(articles);
 				} catch (Exception e) {
 					logger.error("Got error while scaraping product {} on {}, {}", product, url, e.getMessage());
 				}
@@ -127,22 +143,6 @@ public class SeleniumService implements ScrapperConfigKeys {
 
 	private void applyFilters(JSONObject filterConfig) {
 		try {
-			 WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-
-		        // 1. Click the visible selectize input to open dropdown
-		        WebElement dropdownInput = wait.until(ExpectedConditions.elementToBeClickable(
-		            By.cssSelector("div[class='selectize-input items full has-options has-items focus']")
-		        ));
-		        dropdownInput.click();
-
-		        // 2. Wait for dropdown options to be visible
-		        WebElement optionNewest = wait.until(ExpectedConditions.visibilityOfElementLocated(
-		            By.xpath("//div[@class='selectize-dropdown-content']/div[@data-value='Newest']")
-		        ));
-
-		        // 3. Click the "Newest" option
-		        optionNewest.click();
-
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -152,7 +152,7 @@ public class SeleniumService implements ScrapperConfigKeys {
 		ChromeOptions options = new ChromeOptions();
 //		options.addArguments("--headless=new");  // or "--headless" for older versions
 		options.addArguments("--disable-gpu");   // Optional: better compatibility
-		options.addArguments("--window-size=1920,1080");  
+//		options.addArguments("--window-size=1920,1080");  
 		driver = new ChromeDriver(options);
 //		driver = new ChromeDriver();
 		WebDriverManager.chromedriver().setup();
@@ -200,15 +200,16 @@ public class SeleniumService implements ScrapperConfigKeys {
 				results.add(link);
 				j = j + increasePattern;
 			} catch (Exception e) {
-				logger.error("Got error while extracting article in from listing page. {}", e.getMessage());
+				logger.error("Can't find element on index {}.", i);
 				break;
 			}
 		}
 		return results;
 	}
 
-	public void extractInfoFromResults(List<String> articleList, Map<String, Object> scrapingConfig)
+	public List<Article> extractInfoFromResults(List<String> articleList, Map<String, Object> scrapingConfig, Journal journal)
 			throws InterruptedException {
+		List<Article> articles = new ArrayList<>();
 		String doiConfig = (String) scrapingConfig.get(DOI_SELECTOR);
 		String titleConfig = (String) scrapingConfig.get(TITLE_SELECTOR);
 		String abstractConfig = (String) scrapingConfig.get(ABSTRACT_SELECTOR);
@@ -218,13 +219,16 @@ public class SeleniumService implements ScrapperConfigKeys {
 		for (String result : articleList) {
 			driver.get(result);
 			logger.info("Scrapping the article {}", result);
+			
+			Article article = new Article();
+			article.setLink(result);
 			Thread.sleep(deley);
 			try {
 				String doi = getText(doiConfig);
 				if (extractDoi)
 					doi = extractDoi(doi);
 				logger.info("Doi : " + doi);
-
+				article.setDoi(doi);
 			} catch (Exception e) {
 				logger.info("Doi Not Found");
 			}
@@ -232,26 +236,29 @@ public class SeleniumService implements ScrapperConfigKeys {
 			try {
 				String title = getText(titleConfig);
 				logger.info("Title : " + title);
-
+				article.setTitle(title);
 			} catch (Exception e) {
 				logger.error("Title not found.");
 			}
 			try {
 				String abstractText = getText(abstractConfig);
 				logger.info("Abstract : " + abstractText);
-
+				article.setAbs(abstractText);
 			} catch (Exception e) {
 				logger.error("Abstract not found.");
 			}
 			try {
 				String authors = getText(authorsConfig);
 				logger.info("Authors : " + authors);
+				article.setAuthors(authors);
 			} catch (Exception e) {
 				logger.error("Authors not found.");
 			}
+			articles.add(article);
 			logger.info(
 					"___________________________________________________________________________________________________________________________________");
 		}
+		return articles;
 	}
 
 	public String extractDoi(String value) {
@@ -275,7 +282,7 @@ public class SeleniumService implements ScrapperConfigKeys {
 		String password = (String) loginConfig.get(PASSWORD);
 
 		try {
-			logger.info("inside login");
+			logger.info("Inside login");
 			Thread.sleep(deley);
 			selectorClick(loginForm);
 			Thread.sleep(deley);
@@ -333,10 +340,6 @@ public class SeleniumService implements ScrapperConfigKeys {
 			}
 			logger.info("Searching for product : {} using {}", prodect, search[0]);
 		}
-
-//		Thread.sleep(deley);
-//		driver.findElement(By.cssSelector("button[title='Search']")).click();
-
 	}
 
 	public String getText(String value) {
@@ -353,33 +356,28 @@ public class SeleniumService implements ScrapperConfigKeys {
 	public void selectorClick(String value) throws InterruptedException {
 		String[] selector = value.split(" ");
 		try {
-			if (selector[0].equals(ID)) {
+			if (selector[0].equals(ID)) 
 				driver.findElement(By.id(selector[1])).click();
-				logger.info("inside try for id");
-			} else if (selector[0].equals(CSS)) {
+			else if (selector[0].equals(CSS)) 
 				driver.findElement(By.cssSelector(selector[1])).click();
-				logger.info("inside try for css");
-			} else if (selector[0].equals(CLASS)) {
+			else if (selector[0].equals(CLASS))
 				driver.findElement(By.className(selector[1])).click();
-				logger.info("inside try for class");
-			} else {
+			else 
 				driver.findElement(By.xpath(selector[1])).click();
-				logger.info("inside try for xpath");
-			}
+			
+			logger.info("clicking on {}", value);
 		} catch (Exception e) {
 			if (selector[0].equals(ID)) {
 				((ChromiumDriver) driver).executeScript("arguments[0].click();",
 						driver.findElement(By.id(selector[1])));
-				logger.info("inside catch for id");
 			} else if (selector[0].equals(CSS)) {
 				((ChromiumDriver) driver).executeScript("arguments[0].click();",
 						driver.findElement(By.cssSelector(selector[1])));
-				logger.info("inside catch for css");
 			} else {
 				((ChromiumDriver) driver).executeScript("arguments[0].click();",
 						driver.findElement(By.xpath(selector[1])));
-				logger.info("inside catch for xpath");
 			}
+			logger.info("Clicking on {} using java executer in catch block.", value);
 		}
 		Thread.sleep(deley);
 	}
@@ -393,7 +391,6 @@ public class SeleniumService implements ScrapperConfigKeys {
                     .filter(Files::isRegularFile)
                     .map(path -> configDirectory+path.getFileName().toString())
                     .collect(Collectors.toList());
-//            fileNames.forEach(System.out::println);
         } catch (IOException e) {
             e.printStackTrace();
         }
