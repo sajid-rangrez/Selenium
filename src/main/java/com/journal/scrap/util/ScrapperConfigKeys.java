@@ -1,4 +1,4 @@
-package com.journal.scrap.scrapper;
+package com.journal.scrap.util;
 
 public interface ScrapperConfigKeys {
 
@@ -38,4 +38,6 @@ public interface ScrapperConfigKeys {
 	public static final String USER_ID = "username-email";
 	public static final String PASSWORD = "password";
 	public static final String SPLIT_BY = " ";
+	public static final String SELECT_BUTTON = "select_button_selector";
+	public static final String SELECT_OPTION = "select_option_selector";
 }

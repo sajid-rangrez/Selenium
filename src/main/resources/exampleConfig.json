@@ -16,7 +16,10 @@
 			"password": ""
 		},
 		"apply_filter": true,
-		"filter_config": {},
+		"filter_config": {
+			"select_button_selector": "css ",
+			"select_option_selector": "xpath "
+		},
 		"scraping_config": {
 			"search_url": "",
 			"search_input_selector": "",

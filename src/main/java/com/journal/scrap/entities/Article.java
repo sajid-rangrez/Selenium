@@ -11,7 +11,7 @@ public class Article {
 
 	private Journal journal;
 	
-	private Long productId;
+	private String product;
 	private String title;
 	private String doi;
 	private String abs;
