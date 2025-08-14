@@ -1,18 +1,13 @@
 package com.journal.scrap.service;
 
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -21,37 +16,25 @@ import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.chromium.ChromiumDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.journal.scrap.dao.JournalApiService;
 import com.journal.scrap.entities.Article;
 import com.journal.scrap.entities.Journal;
-import com.journal.scrap.entities.Product;
-import com.journal.scrap.util.ScrapperConfigKeys;
 import com.journal.scrap.util.ScrapperUtil;
 
-import io.github.bonigarcia.wdm.WebDriverManager;
-
 @Component
-public class SeleniumService extends ScrapperUtil{
+public class SeleniumServiceOld extends ScrapperUtil{
 
-	public static final Logger logger = LogManager.getLogger(SeleniumService.class);
+	public static final Logger logger = LogManager.getLogger(SeleniumServiceOld.class);
 
 	@Autowired
 	private JournalApiService crudService;
 
 
 	public static void main(String[] args) throws InterruptedException {
-		SeleniumService s = new SeleniumService();
+		SeleniumServiceOld s = new SeleniumServiceOld();
 		s.startScraping();
 	}
 
@@ -121,7 +104,7 @@ public class SeleniumService extends ScrapperUtil{
 					List<Article> articles = extractInfoFromResults(results, scrapingConfig, journal);
 
 					articles.stream().forEach(article -> article.setProduct(product));
-					crudService.saveArticles(articles);
+//					crudService.saveArticles(articles);
 //					prod.setArticles(articles);
 				} catch (Exception e) {
 					logger.error("Got error while scaraping product {} on {}, {}", product, url, e.getMessage());
@@ -180,7 +163,77 @@ public class SeleniumService extends ScrapperUtil{
 			e.printStackTrace();
 		}
 	}
+	public List<String> extractSearchResults(String listingXPath, int totalResults, int startingIndex,
+			int increasePattern) {
+		List<String> results = new ArrayList<>();
 
+		int j = startingIndex;
+		for (int i = 0; i < totalResults; i++) {
+			try {
+				String link = driver.findElement(By.xpath(listingXPath.replace("${index}", String.valueOf(j))))
+						.getAttribute(LINK_ATTRIBUTE);
+				results.add(link);
+				j = j + increasePattern;
+			} catch (Exception e) {
+				logger.error("Can't find element on index {}.", i);
+				break;
+			}
+		}
+		return results;
+	}
+	public List<Article> extractInfoFromResults(List<String> articleList, Map<String, Object> scrapingConfig,
+			Journal journal) throws InterruptedException {
+		List<Article> articles = new ArrayList<>();
+		String doiConfig = (String) scrapingConfig.get(DOI_SELECTOR);
+		String titleConfig = (String) scrapingConfig.get(TITLE_SELECTOR);
+		String abstractConfig = (String) scrapingConfig.get(ABSTRACT_SELECTOR);
+		String authorsConfig = (String) scrapingConfig.get(AUTHORS_SELECTOR);
+		boolean extractDoi = (boolean) scrapingConfig.get(EXTRACT_DOI);
+
+		for (String result : articleList) {
+			driver.get(result);
+			logger.info("Scrapping the article {}", result);
+
+			Article article = new Article();
+			article.setLink(result);
+			Thread.sleep(deley);
+			try {
+				String doi = getText(doiConfig);
+				if (extractDoi)
+					doi = extractDoi(doi);
+				logger.info("Doi : " + doi);
+				article.setDoi(doi);
+			} catch (Exception e) {
+				logger.info("Doi Not Found");
+			}
+
+			try {
+				String title = getText(titleConfig);
+				logger.info("Title : " + title);
+				article.setTitle(title);
+			} catch (Exception e) {
+				logger.error("Title not found.");
+			}
+			try {
+				String abstractText = getText(abstractConfig);
+				logger.info("Abstract : " + abstractText);
+				article.setAbs(abstractText);
+			} catch (Exception e) {
+				logger.error("Abstract not found.");
+			}
+			try {
+				String authors = getText(authorsConfig);
+				logger.info("Authors : " + authors);
+				article.setAuthors(authors);
+			} catch (Exception e) {
+				logger.error("Authors not found.");
+			}
+			articles.add(article);
+			logger.info(
+					"___________________________________________________________________________________________________________________________________");
+		}
+		return articles;
+	}
 	public List<String> loadConfigFiles() {
 
 		List<String> files = new ArrayList<>();

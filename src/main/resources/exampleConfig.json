@@ -28,7 +28,10 @@
 			"results_selector": "",
 			"title_selector": "",
 			"abstract_selector": "",
+			"article_body_selector": "",
+			"enable_pagination":false,
 			"authors_selector": "",
+			"next_page_selector": "",
 			"doi_selector": "",
 			"extract_doi_from_text": true,
 			"delay": 3

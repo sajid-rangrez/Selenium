@@ -22,13 +22,16 @@ public interface ScrapperConfigKeys {
 	public static final String LOGIN = "login";
 	public static final String SEARCH_INPUT_SELECTOR = "search_input_selector";
 	public static final String RESULT_SELECTOR = "results_selector";
+	public static final String NEXT_PAGE_BUTTON = "next_page_selector";
 	public static final String COOKIE_SELECTOR = "cookie_selector";
 	public static final String LINK_ATTRIBUTE = "href";
 	public static final String DOI_SELECTOR = "doi_selector";
 	public static final String TITLE_SELECTOR = "title_selector";
 	public static final String ABSTRACT_SELECTOR = "abstract_selector";
+	public static final String ARTICLE_BODY_SELECTOR = "article_body_selector";
 	public static final String AUTHORS_SELECTOR = "authors_selector";
 	public static final String EXTRACT_DOI = "extract_doi_from_text";
+	public static final String ENABLE_PAGINATION = "enable_pagination";
 	public static final String DOI_REGEX = "DOI:\\s*(\\S+)";
 	public static final String LOGIN_CONFIG = "login_config";
 	public static final String LOGIN_SELECTOR = "login_form_selector";
@@ -40,4 +43,5 @@ public interface ScrapperConfigKeys {
 	public static final String SPLIT_BY = " ";
 	public static final String SELECT_BUTTON = "select_button_selector";
 	public static final String SELECT_OPTION = "select_option_selector";
+	public static final String LIST_FLAG = "list";
 }

@@ -29,6 +29,9 @@ public class LocalLitAlertItemModel {
 	private String title;
 	
 	private String absCitation;
+	
+	private String articleBody;
+	
 	private int absCitationCount;
 	
 	private String editAbsCitation;

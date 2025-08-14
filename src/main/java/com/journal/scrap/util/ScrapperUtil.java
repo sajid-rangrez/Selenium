@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,6 +16,7 @@ import org.json.simple.JSONObject;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.ChromiumDriver;
@@ -22,16 +24,18 @@ import org.springframework.stereotype.Component;
 
 import com.journal.scrap.entities.Article;
 import com.journal.scrap.entities.Journal;
+import com.journal.scrap.model.LocalLitAlertItemModel;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 
 @Component
-public abstract class ScrapperUtil implements ScrapperConfigKeys {
+public class ScrapperUtil implements ScrapperConfigKeys {
 	private static final Logger logger = LogManager.getLogger(ScrapperUtil.class);
 
 	public static int deley = 3000;
-	public static int startingIndex = 1;
-	
+	public int startingIndex = 1;
+	public boolean pagination = false;
+
 	protected WebDriver driver;
 	public static JSONObject jsonObject;
 	protected static String configDirectory;
@@ -40,7 +44,7 @@ public abstract class ScrapperUtil implements ScrapperConfigKeys {
 		logger.info("Inside filter");
 		String selectButtonConfig = (String) filterConfig.get(SELECT_BUTTON);
 		String selectOptionConfig = (String) filterConfig.get(SELECT_OPTION);
-		
+
 		selectorClick(selectButtonConfig);
 		Thread.sleep(deley);
 		selectorClick(selectOptionConfig);
@@ -49,7 +53,7 @@ public abstract class ScrapperUtil implements ScrapperConfigKeys {
 
 	public void init() {
 		ChromeOptions options = new ChromeOptions();
-//		options.addArguments("--headless=new");  // or "--headless" for older versions
+		options.addArguments("--headless=new");  // or "--headless" for older versions
 		options.addArguments("--disable-gpu"); // Optional: better compatibility
 //		options.addArguments("--window-size=1920,1080");  
 		driver = new ChromeDriver(options);
@@ -67,78 +71,170 @@ public abstract class ScrapperUtil implements ScrapperConfigKeys {
 			}
 		}
 	}
+	
+	public boolean openJournal(String url, boolean login, JSONObject journalConfig,
+			Map<String, String> loginCredential) {
+		try {
+			driver.get(url);
+		} catch (Exception e) {
+			logger.info("Something wrong with the website {}", url);
+			logger.error(e.getMessage());
+		}
+		try {
+			selectorClick((String) journalConfig.get(COOKIE_SELECTOR));
+		} catch (Exception e) {
+			logger.info("Config for Cookie popup not found or not configured");
+		}
+		if (login) {
+			login(journalConfig, loginCredential);
+			login = false;
+		}
+		return login;
+	}
+	private void login(JSONObject journalConfig, Map<String, String> loginCredential) {
+		JSONObject loginConfig = (JSONObject) journalConfig.get(LOGIN_CONFIG);
+		String loginForm = ((String) loginConfig.get(LOGIN_SELECTOR));
+		String userIdSelector = ((String) loginConfig.get(USERNAME_SELECTOR));
+		String paswordSelector = ((String) loginConfig.get(PASSWORD_SELECTOR));
+		String SubmitButtonSelector = ((String) loginConfig.get(SUBMIT_BTN_SELECTOR));
+		String userId = loginCredential.get(USER_ID);
+		String password = loginCredential.get(PASSWORD);
 
-	public List<String> extractSearchResults(String listingXPath, int totalResults, int startingIndex,
-			int increasePattern) {
+		try {
+			logger.info("Inside login");
+			Thread.sleep(deley);
+			selectorClick(loginForm);
+			Thread.sleep(deley);
+			selectorInput(userIdSelector, userId);
+			Thread.sleep(deley);
+			selectorInput(paswordSelector, password);
+			Thread.sleep(deley);
+			selectorClick(SubmitButtonSelector);
+		} catch (InterruptedException e) {
+			logger.error("got error while login");
+			e.printStackTrace();
+		}
+	}
+
+	public List<String> extractSearchResults(JSONObject scrapingConfig, int totalResults) throws InterruptedException {
+		try {
+			startingIndex = ((Long) scrapingConfig.get(STARTING_INDEX_FOR_LIST_PAGE)).intValue();			
+		} catch (Exception e) {
+			logger.warn("starting index is not specified in config using default value 1.");
+		}
+		try {
+			pagination = (boolean) scrapingConfig.get(ENABLE_PAGINATION);
+		} catch (NullPointerException npe) {
+			logger.warn("Pagination flag is not present in configuration");
+		}
+		String listingXPath = (String) scrapingConfig.get(RESULT_SELECTOR);
+		String nextPageSelector = (String) scrapingConfig.get(NEXT_PAGE_BUTTON);
+		int increasePattern = ((Long) scrapingConfig.get(INCREASE_PATTERN_IN_LIST_PAGE)).intValue();
+		
 		List<String> results = new ArrayList<>();
-
-		int j = startingIndex;
+		
+		int page = 1;
+		int listingIndex = startingIndex;
 		for (int i = 0; i < totalResults; i++) {
 			try {
-				String link = driver.findElement(By.xpath(listingXPath.replace("${index}", String.valueOf(j))))
+				String link = driver.findElement(By.xpath(listingXPath.replace("${index}", String.valueOf(listingIndex))))
 						.getAttribute(LINK_ATTRIBUTE);
 				results.add(link);
-				j = j + increasePattern;
+				listingIndex = listingIndex + increasePattern;
 			} catch (Exception e) {
-				logger.error("Can't find element on index {}.", i);
-				break;
+				if (pagination) {
+					Thread.sleep(deley);
+					try {
+						selectorClick(nextPageSelector);
+						listingIndex = startingIndex;
+						i = 0;
+						page++;
+						logger.info("navigating to page no {}", page);
+						Thread.sleep(deley);
+					} catch (Exception e2) {
+						logger.error("Next Page navagation button not found!");
+						break;
+					}
+				} else {
+					logger.error("Can't find element on index {}.", i);
+					break;
+				}
 			}
 		}
 		return results;
 	}
 
-	public List<Article> extractInfoFromResults(List<String> articleList, Map<String, Object> scrapingConfig,
-			Journal journal) throws InterruptedException {
-		List<Article> articles = new ArrayList<>();
+	public List<LocalLitAlertItemModel> extractLitAlertFromResults(List<String> articleUrlList,
+			Map<String, Object> scrapingConfig, UUID parentId, String product) throws InterruptedException {
+		List<LocalLitAlertItemModel> litAlertModelList = new ArrayList<>();
 		String doiConfig = (String) scrapingConfig.get(DOI_SELECTOR);
 		String titleConfig = (String) scrapingConfig.get(TITLE_SELECTOR);
 		String abstractConfig = (String) scrapingConfig.get(ABSTRACT_SELECTOR);
+		String articleBodyConfig = (String) scrapingConfig.get(ARTICLE_BODY_SELECTOR);
 		String authorsConfig = (String) scrapingConfig.get(AUTHORS_SELECTOR);
 		boolean extractDoi = (boolean) scrapingConfig.get(EXTRACT_DOI);
 
-		for (String result : articleList) {
-			driver.get(result);
-			logger.info("Scrapping the article {}", result);
+		for (String articleUrl : articleUrlList) {
+			driver.get(articleUrl);
+			logger.info("Scrapping the article {}", articleUrl);
 
-			Article article = new Article();
-			article.setLink(result);
+			LocalLitAlertItemModel litAlertModel = new LocalLitAlertItemModel();
+			litAlertModel.setParentId(parentId);
+			litAlertModel.getProducts().add(product);
+			litAlertModel.setLink(articleUrl);
 			Thread.sleep(deley);
 			try {
 				String doi = getText(doiConfig);
 				if (extractDoi)
 					doi = extractDoi(doi);
-				logger.info("Doi : " + doi);
-				article.setDoi(doi);
+//				logger.info("Doi : " + doi);
+				litAlertModel.setDoi(doi);
 			} catch (Exception e) {
 				logger.info("Doi Not Found");
 			}
 
 			try {
 				String title = getText(titleConfig);
-				logger.info("Title : " + title);
-				article.setTitle(title);
+//				logger.info("Title : " + title);
+				litAlertModel.setTitle(title);
 			} catch (Exception e) {
 				logger.error("Title not found.");
 			}
+
 			try {
-				String abstractText = getText(abstractConfig);
-				logger.info("Abstract : " + abstractText);
-				article.setAbs(abstractText);
+				String articleBody = getText(articleBodyConfig);
+//				logger.info("Article Body : " + articleBody);
+				litAlertModel.setArticleBody(articleBody);
+			} catch (Exception e) {
+				logger.error("Article Body not found.");
+			}
+			try {
+				String abstractText = "";
+				if (abstractConfig.contains(LIST_FLAG))
+					abstractText = getTextMultiple(abstractConfig);
+				else
+					abstractText = getText(abstractConfig);
+//				logger.info("Abstract : " + abstractText);
+				litAlertModel.setAbsCitation(abstractText);
 			} catch (Exception e) {
 				logger.error("Abstract not found.");
 			}
 			try {
-				String authors = getText(authorsConfig);
-				logger.info("Authors : " + authors);
-				article.setAuthors(authors);
+				String authors;
+				if (abstractConfig.contains(LIST_FLAG))
+					authors = getTextMultiple(authorsConfig);
+				else
+					authors = getText(authorsConfig);
+//				logger.info("Authors : " + authors);
+				litAlertModel.setAuthor(authors);
 			} catch (Exception e) {
 				logger.error("Authors not found.");
 			}
-			articles.add(article);
+			litAlertModelList.add(litAlertModel);
 			logger.info(
 					"___________________________________________________________________________________________________________________________________");
 		}
-		return articles;
+		return litAlertModelList;
 	}
 
 	public String extractDoi(String value) {
@@ -151,7 +247,6 @@ public abstract class ScrapperUtil implements ScrapperConfigKeys {
 		}
 		return "NA";
 	}
-
 
 	public void selectorInput(String configValue, String text) {
 		String[] selector = configValue.split(SPLIT_BY);
@@ -166,7 +261,7 @@ public abstract class ScrapperUtil implements ScrapperConfigKeys {
 	}
 
 	public void searchProduct(String searchConfig, String prodect) throws InterruptedException {
-		String[] search = searchConfig.split(" ");
+		String[] search = searchConfig.split(SPLIT_BY);
 		logger.info("inside SearchProduct : {}", prodect);
 		if (search.length == 3) {
 			if (search[0].equalsIgnoreCase(ID)) {
@@ -199,7 +294,7 @@ public abstract class ScrapperUtil implements ScrapperConfigKeys {
 	}
 
 	public String getText(String value) {
-		String[] selector = value.split(" ");
+		String[] selector = value.split(SPLIT_BY);
 		if (selector[0].equals(ID))
 			return driver.findElement(By.id(selector[1])).getText();
 		else if (selector[0].equals(CSS))
@@ -209,8 +304,52 @@ public abstract class ScrapperUtil implements ScrapperConfigKeys {
 
 	}
 
+	public String getTextMultiple(String value) {
+		// this method is for special cases like if there are multiple authors and all
+		// are in diffrent blocks
+		String[] selector = value.split(SPLIT_BY);
+		String resValue = "";
+		List<WebElement> webElements = null;
+
+		if (selector[0].equals(ID))
+			webElements = driver.findElements(By.id(selector[1]));
+		else if (selector[0].equals(CSS))
+			webElements = driver.findElements(By.cssSelector(selector[1]));
+		else if (selector[0].equals(CLASS))
+			webElements = driver.findElements(By.className(selector[1]));
+		else
+			webElements = driver.findElements(By.xpath(selector[1]));
+
+		if (webElements != null) {
+			for (WebElement element : webElements) {
+				resValue += element.getText() + "; ";
+			}
+		}
+		return resValue;
+	}
+
+	public List<String> getTextList(String value) {
+		String[] selector = value.split(SPLIT_BY);
+		List<WebElement> webElements = null;
+		List<String> textValues = new ArrayList<>();
+
+		try {
+			if (selector[0].equals(CSS)) {
+				webElements = driver.findElements(By.cssSelector(selector[1]));
+			} else if (selector[0].equals(CLASS)) {
+				webElements = driver.findElements(By.cssSelector(selector[1]));
+			}
+			for (WebElement element : webElements) {
+				textValues.add(element.getText());
+			}
+		} catch (Exception e) {
+			logger.error("Got error while extracting element List : {}", e.getMessage());
+		}
+		return textValues;
+	}
+
 	public void selectorClick(String value) throws InterruptedException {
-		String[] selector = value.split(" ");
+		String[] selector = value.split(SPLIT_BY);
 		try {
 			if (selector[0].equals(ID))
 				driver.findElement(By.id(selector[1])).click();
@@ -220,20 +359,35 @@ public abstract class ScrapperUtil implements ScrapperConfigKeys {
 				driver.findElement(By.className(selector[1])).click();
 			else
 				driver.findElement(By.xpath(selector[1])).click();
-
 			logger.info("clicking on {}", value);
 		} catch (Exception e) {
-			if (selector[0].equals(ID)) {
-				((ChromiumDriver) driver).executeScript("arguments[0].click();",
-						driver.findElement(By.id(selector[1])));
-			} else if (selector[0].equals(CSS)) {
-				((ChromiumDriver) driver).executeScript("arguments[0].click();",
-						driver.findElement(By.cssSelector(selector[1])));
-			} else {
-				((ChromiumDriver) driver).executeScript("arguments[0].click();",
-						driver.findElement(By.xpath(selector[1])));
-			}
-			logger.info("Clicking on {} using java executer in catch block.", value);
+//			if (selector[0].equals(ID)) 
+//				((ChromiumDriver) driver).executeScript("arguments[0].scrollIntoView(true); arguments[0].click();",
+//						driver.findElement(By.id(selector[1])));
+//			else if (selector[0].equals(CSS))
+//				((ChromiumDriver) driver).executeScript("arguments[0].scrollIntoView(true); arguments[0].click();",
+//						driver.findElement(By.cssSelector(selector[1])));
+//			else if (selector[0].equals(CLASS))
+//				((ChromiumDriver) driver).executeScript("arguments[0].scrollIntoView(true); arguments[0].click();",
+//						driver.findElement(By.className(selector[1])));
+//			else
+//				((ChromiumDriver) driver).executeScript("arguments[0].scrollIntoView(true); arguments[0].click();",
+//						driver.findElement(By.xpath(selector[1])));
+
+			WebElement element;
+			if (selector[0].equals(ID))
+				element = driver.findElement(By.id(selector[1]));
+			else if (selector[0].equals(CSS))
+				element = driver.findElement(By.cssSelector(selector[1]));
+			else if (selector[0].equals(CLASS))
+				element = driver.findElement(By.className(selector[1]));
+			else
+				element = driver.findElement(By.xpath(selector[1]));
+
+			((ChromiumDriver) driver).executeScript("arguments[0].scrollIntoView(true); arguments[0].click();",
+					element);
+
+			logger.info("Clicking on {} using javaScript executer!", value);
 		}
 		Thread.sleep(deley);
 	}
