@@ -38,7 +38,6 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 
 	protected WebDriver driver;
 	public static JSONObject jsonObject;
-	protected static String configDirectory;
 
 	public void applyFilters(JSONObject filterConfig) throws InterruptedException {
 		logger.info("Inside filter");
@@ -46,30 +45,20 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 		String selectOptionConfig = (String) filterConfig.get(SELECT_OPTION);
 
 		selectorClick(selectButtonConfig);
-		Thread.sleep(deley);
+		deley();
 		selectorClick(selectOptionConfig);
-		Thread.sleep(deley);
+		deley();
 	}
 
+	
 	public void init() {
 		ChromeOptions options = new ChromeOptions();
 		options.addArguments("--headless=new");  // or "--headless" for older versions
 		options.addArguments("--disable-gpu"); // Optional: better compatibility
-//		options.addArguments("--window-size=1920,1080");  
+		options.addArguments("--window-size=1920,1080");  
 		driver = new ChromeDriver(options);
-//		driver = new ChromeDriver();
 		WebDriverManager.chromedriver().setup();
 		driver.manage().window().maximize();
-		Properties prop = new Properties();
-
-		if (configDirectory == null) {
-			try {
-				prop.load(new FileInputStream(ENV_PROPERTIES));
-				configDirectory = prop.getProperty(CONFIG_DIRECTORY);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
 	}
 	
 	public boolean openJournal(String url, boolean login, JSONObject journalConfig,
@@ -102,13 +91,13 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 
 		try {
 			logger.info("Inside login");
-			Thread.sleep(deley);
+			deley();
 			selectorClick(loginForm);
-			Thread.sleep(deley);
+			deley();
 			selectorInput(userIdSelector, userId);
-			Thread.sleep(deley);
+			deley();
 			selectorInput(paswordSelector, password);
-			Thread.sleep(deley);
+			deley();
 			selectorClick(SubmitButtonSelector);
 		} catch (InterruptedException e) {
 			logger.error("got error while login");
@@ -143,14 +132,14 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 				listingIndex = listingIndex + increasePattern;
 			} catch (Exception e) {
 				if (pagination) {
-					Thread.sleep(deley);
+					deley();
 					try {
 						selectorClick(nextPageSelector);
 						listingIndex = startingIndex;
 						i = 0;
 						page++;
 						logger.info("navigating to page no {}", page);
-						Thread.sleep(deley);
+						deley();
 					} catch (Exception e2) {
 						logger.error("Next Page navagation button not found!");
 						break;
@@ -181,14 +170,15 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 			LocalLitAlertItemModel litAlertModel = new LocalLitAlertItemModel();
 			litAlertModel.setParentId(parentId);
 			litAlertModel.getProducts().add(product);
-			litAlertModel.setLink(articleUrl);
-			Thread.sleep(deley);
+			litAlertModel.setSource(articleUrl);
+			deley();
 			try {
 				String doi = getText(doiConfig);
 				if (extractDoi)
 					doi = extractDoi(doi);
-//				logger.info("Doi : " + doi);
+				logger.info("Doi : " + doi);
 				litAlertModel.setDoi(doi);
+				litAlertModel.setFta_link(FTA_URL+doi);
 			} catch (Exception e) {
 				logger.info("Doi Not Found");
 			}
@@ -231,8 +221,7 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 				logger.error("Authors not found.");
 			}
 			litAlertModelList.add(litAlertModel);
-			logger.info(
-					"___________________________________________________________________________________________________________________________________");
+			logger.info("___________________________________________________________________________________________________________________________________");
 		}
 		return litAlertModelList;
 	}
@@ -361,19 +350,6 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 				driver.findElement(By.xpath(selector[1])).click();
 			logger.info("clicking on {}", value);
 		} catch (Exception e) {
-//			if (selector[0].equals(ID)) 
-//				((ChromiumDriver) driver).executeScript("arguments[0].scrollIntoView(true); arguments[0].click();",
-//						driver.findElement(By.id(selector[1])));
-//			else if (selector[0].equals(CSS))
-//				((ChromiumDriver) driver).executeScript("arguments[0].scrollIntoView(true); arguments[0].click();",
-//						driver.findElement(By.cssSelector(selector[1])));
-//			else if (selector[0].equals(CLASS))
-//				((ChromiumDriver) driver).executeScript("arguments[0].scrollIntoView(true); arguments[0].click();",
-//						driver.findElement(By.className(selector[1])));
-//			else
-//				((ChromiumDriver) driver).executeScript("arguments[0].scrollIntoView(true); arguments[0].click();",
-//						driver.findElement(By.xpath(selector[1])));
-
 			WebElement element;
 			if (selector[0].equals(ID))
 				element = driver.findElement(By.id(selector[1]));
@@ -389,7 +365,15 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 
 			logger.info("Clicking on {} using javaScript executer!", value);
 		}
-		Thread.sleep(deley);
+		deley();
+	}
+	
+	public void deley() {
+		try {
+			Thread.sleep(deley);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

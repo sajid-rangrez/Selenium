@@ -24,7 +24,7 @@ public class LocalLitAlertItemModel {
 	
 	private String doi;
 	
-	private String link;
+	private String fta_link;
 	
 	private String title;
 	

@@ -39,8 +39,8 @@ public class ScrapRestService extends ScrapperUtil {
 		Map<String, String> loginCredential = requestModel.getCredentials();
 		UUID parentId = requestModel.getAlertId();
 
-		WebScrapingResponse resp = new WebScrapingResponse();
-		resp.setWsAuthKey(requestModel.getWsAuthKey());
+		WebScrapingResponse response = new WebScrapingResponse();
+		response.setWsAuthKey(requestModel.getWsAuthKey());
 
 		JSONObject scrapingConfig = (JSONObject) journalConfig.get(SCRAPING_CONFIF);
 		JSONObject filterConfig = (JSONObject) journalConfig.get(FILTER_CONFIG);
@@ -54,13 +54,9 @@ public class ScrapRestService extends ScrapperUtil {
 			logger.warn("Value for deley is not specified in config usin default value {}", e.getMessage());
 		}
 		String url = requestModel.getSource();
-		String name = (String) journalConfig.get(JOURNAL_NAME);
 		logger.info("Starting for {}", url);
-		try {
-			Thread.sleep(deley);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		
+		deley();
 
 		// searching for each product in given journal
 		for (String product : products) {
@@ -73,24 +69,24 @@ public class ScrapRestService extends ScrapperUtil {
 				String searchPath = (String) scrapingConfig.get(SEARCH_INPUT_SELECTOR);
 				String resultsPath = (String) scrapingConfig.get(RESULT_SELECTOR);
 
-				Thread.sleep(deley);
+				deley();
 				searchProduct(searchPath, product);
-				Thread.sleep(deley);
+				deley();
 				// Apply filters
-				if (applyFiltes) {
+				if (applyFiltes)
 					applyFilters(filterConfig);
-				}
-				Thread.sleep(deley);
+
+				deley();
 				List<String> results = extractSearchResults(scrapingConfig, 100);
 				logger.info(results);
 				logger.info("Got {} results ", results.size());
 				List<LocalLitAlertItemModel> litAlertModelList = extractLitAlertFromResults(results, scrapingConfig,
 						parentId, product);
 
-				resp.setAlertId(requestModel.getAlertId());
-				resp.setListArticles(litAlertModelList);
+				response.setAlertId(requestModel.getAlertId());
+				response.setListArticles(litAlertModelList);
 				JournalApiService rest = new JournalApiService();
-				rest.sentResponse(resp);
+//				rest.sentResponse(resp);
 			} catch (Exception e) {
 				logger.error("Got error while scaraping product {} on {}, {}", product, url, e.getMessage());
 			}
@@ -100,7 +96,7 @@ public class ScrapRestService extends ScrapperUtil {
 			logger.info("driver Quit");
 		}
 		logger.info("Script complete!");
-		return resp;
+		return response;
 	}
 
 	private JSONObject getJsonObject(String jsonString) {

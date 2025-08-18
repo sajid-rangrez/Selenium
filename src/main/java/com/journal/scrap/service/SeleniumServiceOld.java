@@ -1,5 +1,6 @@
 package com.journal.scrap.service;
 
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -16,6 +18,8 @@ import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.openqa.selenium.By;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,10 +28,15 @@ import com.journal.scrap.entities.Article;
 import com.journal.scrap.entities.Journal;
 import com.journal.scrap.util.ScrapperUtil;
 
+import io.github.bonigarcia.wdm.WebDriverManager;
+
 @Component
 public class SeleniumServiceOld extends ScrapperUtil{
 
 	public static final Logger logger = LogManager.getLogger(SeleniumServiceOld.class);
+	
+
+	protected static String configDirectory;
 
 	@Autowired
 	private JournalApiService crudService;
@@ -36,6 +45,26 @@ public class SeleniumServiceOld extends ScrapperUtil{
 	public static void main(String[] args) throws InterruptedException {
 		SeleniumServiceOld s = new SeleniumServiceOld();
 		s.startScraping();
+	}
+	
+	public void init() {
+		ChromeOptions options = new ChromeOptions();
+		options.addArguments("--headless=new");  // or "--headless" for older versions
+		options.addArguments("--disable-gpu"); // Optional: better compatibility
+		options.addArguments("--window-size=1920,1080");  
+		driver = new ChromeDriver(options);
+		WebDriverManager.chromedriver().setup();
+		driver.manage().window().maximize();
+		Properties prop = new Properties();
+
+		if (configDirectory == null) {
+			try {
+				prop.load(new FileInputStream(ENV_PROPERTIES));
+				configDirectory = prop.getProperty(CONFIG_DIRECTORY);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	private JSONObject loadConfig(String ConfigFilePath) {
