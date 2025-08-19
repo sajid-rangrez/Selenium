@@ -1,11 +1,9 @@
 package com.journal.scrap.util;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,8 +20,6 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.ChromiumDriver;
 import org.springframework.stereotype.Component;
 
-import com.journal.scrap.entities.Article;
-import com.journal.scrap.entities.Journal;
 import com.journal.scrap.model.LocalLitAlertItemModel;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
@@ -38,6 +34,9 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 
 	protected WebDriver driver;
 	public static JSONObject jsonObject;
+	
+	public static String CURRENT_WORKING_DIR;
+	public static String EVIDENCE_DIR;
 
 	public void applyFilters(JSONObject filterConfig) throws InterruptedException {
 		logger.info("Inside filter");
@@ -50,17 +49,31 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 		deley();
 	}
 
-	
 	public void init() {
 		ChromeOptions options = new ChromeOptions();
-		options.addArguments("--headless=new");  // or "--headless" for older versions
+		options.addArguments("--headless=new"); // or "--headless" for older versions
 		options.addArguments("--disable-gpu"); // Optional: better compatibility
-		options.addArguments("--window-size=1920,1080");  
+		options.addArguments("--window-size=1920,1080");
+		options.addArguments("--start-maximized");
+
 		driver = new ChromeDriver(options);
 		WebDriverManager.chromedriver().setup();
 		driver.manage().window().maximize();
+		
+		initEvidence();
 	}
-	
+
+	public void initEvidence() {
+		CURRENT_WORKING_DIR = System.getProperty("user.dir");
+		System.out.println("currentWorkingDir: " + CURRENT_WORKING_DIR);
+		EVIDENCE_DIR = CURRENT_WORKING_DIR + "\\Evidences";
+
+		File theDir = new File(EVIDENCE_DIR);
+		if (!theDir.exists()) {
+			theDir.mkdirs();
+		}
+	}
+
 	public boolean openJournal(String url, boolean login, JSONObject journalConfig,
 			Map<String, String> loginCredential) {
 		try {
@@ -80,6 +93,7 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 		}
 		return login;
 	}
+
 	private void login(JSONObject journalConfig, Map<String, String> loginCredential) {
 		JSONObject loginConfig = (JSONObject) journalConfig.get(LOGIN_CONFIG);
 		String loginForm = ((String) loginConfig.get(LOGIN_SELECTOR));
@@ -107,7 +121,7 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 
 	public List<String> extractSearchResults(JSONObject scrapingConfig, int totalResults) throws InterruptedException {
 		try {
-			startingIndex = ((Long) scrapingConfig.get(STARTING_INDEX_FOR_LIST_PAGE)).intValue();			
+			startingIndex = ((Long) scrapingConfig.get(STARTING_INDEX_FOR_LIST_PAGE)).intValue();
 		} catch (Exception e) {
 			logger.warn("starting index is not specified in config using default value 1.");
 		}
@@ -119,14 +133,15 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 		String listingXPath = (String) scrapingConfig.get(RESULT_SELECTOR);
 		String nextPageSelector = (String) scrapingConfig.get(NEXT_PAGE_BUTTON);
 		int increasePattern = ((Long) scrapingConfig.get(INCREASE_PATTERN_IN_LIST_PAGE)).intValue();
-		
+
 		List<String> results = new ArrayList<>();
-		
+
 		int page = 1;
 		int listingIndex = startingIndex;
 		for (int i = 0; i < totalResults; i++) {
 			try {
-				String link = driver.findElement(By.xpath(listingXPath.replace("${index}", String.valueOf(listingIndex))))
+				String link = driver
+						.findElement(By.xpath(listingXPath.replace("${index}", String.valueOf(listingIndex))))
 						.getAttribute(LINK_ATTRIBUTE);
 				results.add(link);
 				listingIndex = listingIndex + increasePattern;
@@ -178,14 +193,14 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 					doi = extractDoi(doi);
 				logger.info("Doi : " + doi);
 				litAlertModel.setDoi(doi);
-				litAlertModel.setFta_link(FTA_URL+doi);
+				litAlertModel.setFta_link(FTA_URL + doi);
 			} catch (Exception e) {
 				logger.info("Doi Not Found");
 			}
 
 			try {
 				String title = getText(titleConfig);
-//				logger.info("Title : " + title);
+				logger.info("Title : " + title);
 				litAlertModel.setTitle(title);
 			} catch (Exception e) {
 				logger.error("Title not found.");
@@ -193,7 +208,7 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 
 			try {
 				String articleBody = getText(articleBodyConfig);
-//				logger.info("Article Body : " + articleBody);
+				logger.info("Article Body : " + articleBody);
 				litAlertModel.setArticleBody(articleBody);
 			} catch (Exception e) {
 				logger.error("Article Body not found.");
@@ -204,7 +219,7 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 					abstractText = getTextMultiple(abstractConfig);
 				else
 					abstractText = getText(abstractConfig);
-//				logger.info("Abstract : " + abstractText);
+				logger.info("Abstract : " + abstractText);
 				litAlertModel.setAbsCitation(abstractText);
 			} catch (Exception e) {
 				logger.error("Abstract not found.");
@@ -215,13 +230,14 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 					authors = getTextMultiple(authorsConfig);
 				else
 					authors = getText(authorsConfig);
-//				logger.info("Authors : " + authors);
+				logger.info("Authors : " + authors);
 				litAlertModel.setAuthor(authors);
 			} catch (Exception e) {
 				logger.error("Authors not found.");
 			}
 			litAlertModelList.add(litAlertModel);
-			logger.info("___________________________________________________________________________________________________________________________________");
+			logger.info(
+					"___________________________________________________________________________________________________________________________________");
 		}
 		return litAlertModelList;
 	}
@@ -367,7 +383,7 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 		}
 		deley();
 	}
-	
+
 	public void deley() {
 		try {
 			Thread.sleep(deley);
