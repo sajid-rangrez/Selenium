@@ -1,6 +1,7 @@
 package com.journal.scrap.util;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -50,15 +52,24 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 	}
 
 	public void init() {
-		ChromeOptions options = new ChromeOptions();
-		options.addArguments("--headless=new"); // or "--headless" for older versions
-		options.addArguments("--disable-gpu"); // Optional: better compatibility
-		options.addArguments("--window-size=1920,1080");
-		options.addArguments("--start-maximized");
-
-		driver = new ChromeDriver(options);
+//		ChromeOptions options = new ChromeOptions();
+//		options.addArguments("--headless=new"); // or "--headless" for older versions
+//		options.addArguments("--disable-gpu"); // Optional: better compatibility
+//		options.addArguments("--window-size=1920,1080");
+//		options.addArguments("--start-maximized");
+//
+//		driver = new ChromeDriver(options);
+//		WebDriverManager.chromedriver().setup();
+//		driver.manage().window().maximize();
+		
 		WebDriverManager.chromedriver().setup();
-		driver.manage().window().maximize();
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--headless=new"); // use "--headless" if "--headless=new" gives issues
+        options.addArguments("--disable-gpu");
+        options.addArguments("--window-size=1920,1080"); // full HD default
+        this.driver = new ChromeDriver(options);
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+        driver.manage().window().setSize(new Dimension(1920, 1080));	
 		
 		initEvidence();
 	}
@@ -178,9 +189,13 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 		String authorsConfig = (String) scrapingConfig.get(AUTHORS_SELECTOR);
 		boolean extractDoi = (boolean) scrapingConfig.get(EXTRACT_DOI);
 
+		int i = 0;
 		for (String articleUrl : articleUrlList) {
 			driver.get(articleUrl);
 			logger.info("Scrapping the article {}", articleUrl);
+			if(i++ > 5) {
+				break;
+			}
 
 			LocalLitAlertItemModel litAlertModel = new LocalLitAlertItemModel();
 			litAlertModel.setParentId(parentId);

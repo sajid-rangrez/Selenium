@@ -15,6 +15,7 @@ import org.json.simple.parser.ParseException;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.firefox.HasFullPageScreenshot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -92,7 +93,8 @@ public class ScrapRestService extends ScrapperUtil {
 				logger.info(results);
 				logger.info("Got {} results ", numberOfSearchResults);
 				
-				if(numberOfSearchResults == 0) {
+				if (numberOfSearchResults == 0) {
+					deley();
 					takeScreenShot(sourceName, product);
 				}
 				
@@ -115,20 +117,26 @@ public class ScrapRestService extends ScrapperUtil {
 		return response;
 	}
 
-	private void takeScreenShot(String sourceName,String product) {
+	private void takeScreenShot(String sourceName, String product) {
 		try {
-			FileUtils.copyFile(((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE),
-					new File(EVIDENCE_DIR +"/"+ sourceName+"-"+product
-							+ new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new java.util.Date())						+ ".png"));
+			File screenshotFile;
+			if (driver instanceof HasFullPageScreenshot) {
+			    screenshotFile = ((HasFullPageScreenshot) driver).getFullPageScreenshotAs(OutputType.FILE);
+			} else {
+			    screenshotFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+			}
+ 
+			FileUtils.copyFile(screenshotFile,
+			    new File(EVIDENCE_DIR + "/" + sourceName + "-" + product
+			        + new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new java.util.Date())
+			        + ".png"));
+ 
 		} catch (WebDriverException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-
-
-
 
 	private JSONObject getJsonObject(String jsonString) {
 		JSONParser parser = new JSONParser();
