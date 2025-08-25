@@ -45,4 +45,9 @@ public interface ScrapperConfigKeys {
 	public static final String SELECT_OPTION = "select_option_selector";
 	public static final String LIST_FLAG = "list";
 	public static final String FTA_URL = "https://doi.org/";
+	
+	public static final String ARTICLE_COUNT = "article_count";
+	public static final String ARTICLE_CONFIG = "article_config";
+	public static final String ARTICLE_COUNT_SIZE = "article_count_selector";
+	public static final String ARTICLE_COUNT_REGEX = "article_count_regex";
 }

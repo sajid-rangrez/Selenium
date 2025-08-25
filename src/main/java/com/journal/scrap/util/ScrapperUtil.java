@@ -50,6 +50,32 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 		selectorClick(selectOptionConfig);
 		deley();
 	}
+	public String articleCount(JSONObject articleConfig) throws InterruptedException {
+		try {
+ 
+			String regexPattern = (String) articleConfig.get(ARTICLE_COUNT_REGEX);
+			String selectArticleCount = (String) articleConfig.get(ARTICLE_COUNT_SIZE);
+			// String text = driver.findElement(By.xpath(selectArticleCount)).getText();
+			String text = getText(selectArticleCount);
+ 
+			Matcher matcher = Pattern.compile(regexPattern)
+					.matcher(text);
+			
+			
+			String totalArticles = null;
+			if (matcher.find()) {
+				totalArticles = matcher.group(1); // str to intt
+				logger.info("Found {} Articles on search", totalArticles);
+			} else {
+				logger.info("Unable to find ");
+			}
+			return totalArticles;
+		} catch (Exception e) {
+			logger.error("Error while fetching Article Count text", e);
+			return null;
+		}
+ 
+	}
 
 	public void init() {
 //		ChromeOptions options = new ChromeOptions();

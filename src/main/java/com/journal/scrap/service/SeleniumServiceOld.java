@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,8 +45,62 @@ public class SeleniumServiceOld extends ScrapperUtil{
 
 
 	public static void main(String[] args) throws InterruptedException {
-		SeleniumServiceOld s = new SeleniumServiceOld();
-		s.startScraping();
+		String text = "Showing 75 results for";
+        Pattern pattern = Pattern.compile("Showing\\s+(\\d+)\\s+results\\s+for");
+        Matcher matcher = pattern.matcher(text);
+
+        if (matcher.find()) {
+            System.out.println(matcher.group(1)); // prints: 6 of 6 items
+        }
+//		articleCount();
+	}
+//	public void articleCount(JSONObject articleConfig) throws InterruptedException {
+//		try {
+//
+//			String regexConfig = (String) articleConfig.get(ARTICLE_COUNT_REGEX);
+//			String selectArticleCount = (String) articleConfig.get(ARTICLE_COUNT_SIZE);
+//			String text = driver.findElement(By.xpath(selectArticleCount)).getText();
+// 
+//			Pattern pattern = Pattern.compile(regexConfig);
+//	        Matcher matcher = pattern.matcher(text);
+//	        
+//	        if (matcher.find()) {
+//	            System.out.println(matcher.group(1)); // prints: 6 of 6 items
+//	        }
+//			
+//		} catch (Exception e) {
+//			logger.error("Error while fetching Article Count text", e);
+//		}
+// 
+//	}
+	
+	public static void articleCount() throws InterruptedException {
+		try {
+//			String selectArticleCount = (String) articleConfig.get(ARTICLE_COUNT_SIZE);
+//			String text = driver.findElement(By.xpath(selectArticleCount)).getText();
+//			String count = text.replaceAll(".*\\b(\\d+)\\s*items$", "$1");
+//			logger.info("Article Count: {}", count);
+ 
+			String regexConfig = ".*of\\s+(\\d+)\\s+items$->$1";
+ 
+			// Split regex and replacement using "->"
+			String[] parts = regexConfig.split("->");
+			String regexPattern = parts[0];
+			String replacement = parts[1];
+ 
+			// Get article text from the page
+//			String selectArticleCount = (String) articleConfig.get(ARTICLE_COUNT_SIZE);
+			String text = "1 - 6 of 6 items";
+ 
+			// Apply regex dynamically
+			String count = text.replaceAll(regexPattern, replacement);
+ 
+			// Log result
+			logger.info("Article Count: {}", count);
+		} catch (Exception e) {
+			logger.error("Error while fetching Article Count text", e);
+		}
+ 
 	}
 	
 	public void init() {
