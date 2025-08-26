@@ -17,5 +17,7 @@ public class WebScrapingResponse {
 	private String retransSecurityKey;
 	
 	private String wsAuthKey;
+	
+	private int totalSearchResult;
 
 }

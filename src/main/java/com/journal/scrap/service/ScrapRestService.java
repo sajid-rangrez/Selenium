@@ -62,6 +62,8 @@ public class ScrapRestService extends ScrapperUtil {
 		boolean login = (boolean) journalConfig.get(LOGIN);
 		boolean applyFiltes = (boolean) journalConfig.get(APPLY_FILTER);
 		boolean checkArticleCount = (boolean) journalConfig.get(ARTICLE_COUNT);
+		
+		int totalSearchResults = 150; //default will extract these many articles if pagination is enabled
 
 		try {
 			deley = ((Long) scrapingConfig.get(DELEY)).intValue();
@@ -91,19 +93,21 @@ public class ScrapRestService extends ScrapperUtil {
 					applyFilters(filterConfig);
 					deley();
 				}
-				int totalSearchResults = 100; //default will extract these many articles if pagination is enabled
+				
 				if (checkArticleCount) {
 					deley();
 					try {
 						totalSearchResults = Integer.parseInt(articleCount(articleConfig));				
 					} catch(Exception e) {
 						logger.warn("Total Article count is not found!");
+						totalSearchResults = 100;
 					}
 					deley();
 				}
 				
 				List<String> results = extractSearchResults(scrapingConfig, totalSearchResults);
 				int numberOfSearchResults = results.size();
+				totalSearchResults = numberOfSearchResults;
 				logger.info(results);
 				logger.info("Got {} results ", numberOfSearchResults);
 				
@@ -117,6 +121,7 @@ public class ScrapRestService extends ScrapperUtil {
 
 				response.setAlertId(requestModel.getAlertId());
 				response.setListArticles(litAlertModelList);
+				response.setTotalSearchResult(totalSearchResults);
 				JournalApiService rest = new JournalApiService();
 				rest.sentResponse(response);
 			} catch (Exception e) {
