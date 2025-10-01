@@ -1,0 +1,40 @@
+{
+	"name": "",
+	"url": "",
+	"cookie_selector": "",
+	"login": false,
+	"login_config": {
+		"login_form_selector": "",
+		"username_selector": "",
+		"password_selector": "",
+		"submit_button_selector": "",
+		"username-email": "",
+		"password": ""
+	},
+	"apply_filter": true,
+	"filter_config": {
+		"select_button_selector": "css ",
+		"select_option_selector": "xpath "
+	},
+	"article_count": false,
+	"article_config": {
+		"article_count_selector": "",
+		"article_count_regex": "of (\\d+) items"
+	},
+	"scraping_config": {
+		"search_url": "",
+		"search_input_selector": "",
+		"increase_pattern_in_list_page": 2,
+		"starting_index_for_list_page": 1,
+		"results_selector": "",
+		"title_selector": "",
+		"abstract_selector": "",
+		"article_body_selector": "",
+		"enable_pagination": false,
+		"authors_selector": "",
+		"next_page_selector": "",
+		"doi_selector": "",
+		"extract_doi_from_text": true,
+		"delay": 3
+	}
+}

@@ -21,8 +21,8 @@ import org.springframework.stereotype.Service;
 
 import com.journal.scrap.dao.JournalApiService;
 import com.journal.scrap.model.LocalLitAlertItemModel;
-import com.journal.scrap.model.WebScrapingRequest;
-import com.journal.scrap.model.WebScrapingResponse;
+import com.journal.scrap.model.LocalLitMsRequest;
+import com.journal.scrap.model.LocalLitMsResponse;
 import com.journal.scrap.util.ScrapperUtil;
 
 @Service
@@ -32,7 +32,7 @@ public class ScrapRestService extends ScrapperUtil {
 	@Autowired
 	private JournalApiService crudService;
 
-	public String startThread(WebScrapingRequest requestModel) {
+	public String startThread(LocalLitMsRequest requestModel) {
 		ScrapRestService newThread = new ScrapRestService();
 		Thread thread = new Thread(() -> newThread.startScraping(requestModel));
 		thread.start();
@@ -42,7 +42,7 @@ public class ScrapRestService extends ScrapperUtil {
 	
 	
 
-	public WebScrapingResponse startScraping(WebScrapingRequest requestModel) {
+	public LocalLitMsResponse startScraping(LocalLitMsRequest requestModel) {
 		init();
 		
 		JSONObject journalConfig = getJsonObject(requestModel.getJsonConfig());
@@ -50,7 +50,7 @@ public class ScrapRestService extends ScrapperUtil {
 		Map<String, String> loginCredential = requestModel.getCredentials();
 		UUID parentId = requestModel.getAlertId();
 
-		WebScrapingResponse response = new WebScrapingResponse();
+		LocalLitMsResponse response = new LocalLitMsResponse();
 		response.setWsAuthKey(requestModel.getWsAuthKey());
 
 		JSONObject scrapingConfig = (JSONObject) journalConfig.get(SCRAPING_CONFIF);

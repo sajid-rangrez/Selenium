@@ -219,9 +219,9 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 		for (String articleUrl : articleUrlList) {
 			driver.get(articleUrl);
 			logger.info("Scrapping the article {}", articleUrl);
-			if(i++ > 5) {
-				break;
-			}
+//			if(i++ > 5) {
+//				break;
+//			}
 
 			LocalLitAlertItemModel litAlertModel = new LocalLitAlertItemModel();
 			litAlertModel.setParentId(parentId);
@@ -241,7 +241,7 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 
 			try {
 				String title = getText(titleConfig);
-				logger.info("Title : " + title);
+//				logger.info("Title : " + title);
 				litAlertModel.setTitle(title);
 			} catch (Exception e) {
 				logger.error("Title not found.");
@@ -249,7 +249,7 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 
 			try {
 				String articleBody = getText(articleBodyConfig);
-				logger.info("Article Body : " + articleBody);
+//				logger.info("Article Body : " + articleBody);
 				litAlertModel.setArticleBody(articleBody);
 			} catch (Exception e) {
 				logger.error("Article Body not found.");
@@ -260,7 +260,7 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 					abstractText = getTextMultiple(abstractConfig);
 				else
 					abstractText = getText(abstractConfig);
-				logger.info("Abstract : " + abstractText);
+//				logger.info("Abstract : " + abstractText);
 				litAlertModel.setAbsCitation(abstractText);
 			} catch (Exception e) {
 				logger.error("Abstract not found.");
@@ -271,7 +271,7 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 					authors = getTextMultiple(authorsConfig);
 				else
 					authors = getText(authorsConfig);
-				logger.info("Authors : " + authors);
+//				logger.info("Authors : " + authors);
 				litAlertModel.setAuthor(authors);
 			} catch (Exception e) {
 				logger.error("Authors not found.");

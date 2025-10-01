@@ -4,23 +4,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
-public class WebScrapingRequest {
+@Builder
+public class LocalLitMsRequest {
 	
 //	private LocalLitAlertModel alertModel;
-	String source;
-	UUID alertId;
+	private UUID alertId;
+	
+	private String source;
+	
+	private String wsAuthKey;
 	
 	private String jsonConfig;
 	
-	private Map<String, String> credentials;
-	
 	private List<String> products;
 	
-	private String wsAuthKey;
+	private Map<String, String> credentials;
 	
 }
