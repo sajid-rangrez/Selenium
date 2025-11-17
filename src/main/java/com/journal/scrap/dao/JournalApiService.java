@@ -18,13 +18,11 @@ import lombok.Setter;
 @Component
 public class JournalApiService {
 	
-	@Value("local.lit.api.endpoint")
+	@Value("${local.lit.api.endpoint}")
 	private String apiUrl;
 	
 	public void sentResponse(LocalLitMsResponse scrapResponse) {
 		RestTemplate restTemplate = new RestTemplate();
-
-
         // Set headers
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -37,8 +35,8 @@ public class JournalApiService {
 
         System.out.println("Status Code: " + response.getStatusCodeValue());
         System.out.println("Response Body: " + response.getBody());
-        System.out.println("data sent");
         
+        System.out.println("data sent");
 		
 		
 	}

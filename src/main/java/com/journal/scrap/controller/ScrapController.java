@@ -22,10 +22,10 @@ public class ScrapController {
 //		restService.startScraping(journalConfig);
 //		return "Executed";
 //	}
-	@PostMapping("start2")
-	public LocalLitMsResponse start(@RequestBody LocalLitMsRequest requestModel) throws InterruptedException {
-		return restService.startScraping(requestModel);
-	}
+//	@PostMapping("start2")
+//	public LocalLitMsResponse start(@RequestBody LocalLitMsRequest requestModel) throws InterruptedException {
+//		return restService.startScraping(requestModel);
+//	}
 	@PostMapping("start")
 	public String startInThread(@RequestBody LocalLitMsRequest requestModel) throws InterruptedException {
 		

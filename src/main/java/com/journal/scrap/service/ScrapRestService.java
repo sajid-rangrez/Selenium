@@ -34,7 +34,7 @@ public class ScrapRestService extends ScrapperUtil {
 
 	public String startThread(LocalLitMsRequest requestModel) {
 		ScrapRestService newThread = new ScrapRestService();
-		Thread thread = new Thread(() -> newThread.startScraping(requestModel));
+		Thread thread = new Thread(() -> newThread.startScraping(requestModel, crudService));
 		thread.start();
 		return "Scraping Initiated";
 	}
@@ -42,7 +42,7 @@ public class ScrapRestService extends ScrapperUtil {
 	
 	
 
-	public LocalLitMsResponse startScraping(LocalLitMsRequest requestModel) {
+	public LocalLitMsResponse startScraping(LocalLitMsRequest requestModel, JournalApiService crudService) {
 		init();
 		
 		JSONObject journalConfig = getJsonObject(requestModel.getJsonConfig());
@@ -50,6 +50,8 @@ public class ScrapRestService extends ScrapperUtil {
 		Map<String, String> loginCredential = requestModel.getCredentials();
 		UUID parentId = requestModel.getAlertId();
 
+		logger.info("WsAuthKey : {}",requestModel.getWsAuthKey());
+		logger.info("AlertId : {}", requestModel.getAlertId());
 		LocalLitMsResponse response = new LocalLitMsResponse();
 		response.setWsAuthKey(requestModel.getWsAuthKey());
 
@@ -121,9 +123,8 @@ public class ScrapRestService extends ScrapperUtil {
 
 				response.setAlertId(requestModel.getAlertId());
 				response.setListArticles(litAlertModelList);
-				response.setTotalSearchResult(totalSearchResults);
-				JournalApiService rest = new JournalApiService();
-				rest.sentResponse(response);
+//				response.setTotalSearchResult(totalSearchResults);
+				crudService.sentResponse(response);
 			} catch (Exception e) {
 				logger.error("Got error while scaraping product {} on {}, {}", product, url, e.getMessage());
 			}

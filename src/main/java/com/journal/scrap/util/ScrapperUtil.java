@@ -219,9 +219,9 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 		for (String articleUrl : articleUrlList) {
 			driver.get(articleUrl);
 			logger.info("Scrapping the article {}", articleUrl);
-//			if(i++ > 5) {
-//				break;
-//			}
+			if(i++ > 10) {
+				break;
+			}
 
 			LocalLitAlertItemModel litAlertModel = new LocalLitAlertItemModel();
 			litAlertModel.setParentId(parentId);
@@ -234,7 +234,7 @@ public class ScrapperUtil implements ScrapperConfigKeys {
 					doi = extractDoi(doi);
 				logger.info("Doi : " + doi);
 				litAlertModel.setDoi(doi);
-				litAlertModel.setFta_link(FTA_URL + doi);
+				litAlertModel.setFtaLink(FTA_URL + doi);
 			} catch (Exception e) {
 				logger.info("Doi Not Found");
 			}

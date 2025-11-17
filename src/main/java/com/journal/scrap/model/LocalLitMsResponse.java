@@ -20,10 +20,10 @@ public class LocalLitMsResponse {
 	
 	private List<LocalLitAlertItemModel> listArticles;
 	
-	private String retransSecurityKey;
+//	private String retransSecurityKey;
 	
 	private String wsAuthKey;
 	
-	private int totalSearchResult;
+//	private int totalSearchResult;
 
 }

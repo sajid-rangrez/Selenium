@@ -46,9 +46,9 @@ public class ScoMedService {
 	private TwitterApiConfig twitterApiConfig;
 	
 	public LocalLitMsResponse getComments(LocalLitMsRequest requestModel) throws JsonMappingException, JsonProcessingException {
-		if(requestModel.getSource().equals("000001")) {
+		if(requestModel.getSource().contains("x.com")) {
 			return getXComments(requestModel);
-		} else if(requestModel.getSource().equals("000002")) {
+		} else if(requestModel.getSource().contains("YouTube") ||requestModel.getSource().contains("youtube.com")) {
 			return getYTComments(requestModel);
 		}
 		return null;
@@ -59,28 +59,33 @@ public class ScoMedService {
 		String authkey = requestModel.getWsAuthKey();
 		UUID parentId = requestModel.getAlertId();
 		Map<String, String> config = getJsonObject(requestModel.getJsonConfig());
+		String apiKey = requestModel.getCredentials().get("authToken");
+		String postTitle = config.get("postTitle");
+
+		logger.info(parentId);
+		logger.info(authkey);
 
 		List<LocalLitAlertItemModel> listArticles = new ArrayList<>();
 		LocalLitMsResponse response = new LocalLitMsResponse().builder()
-				.retransSecurityKey(authkey)
+//				.retransSecurityKey(authkey)
 				.alertId(parentId)
 				.listArticles(listArticles)
 				.wsAuthKey(authkey)
 				.build();
 
-		TweetsResponse resp = twitterApiConfig.fetchMockCommentData(config);
+		TweetsResponse resp = twitterApiConfig.fetchMockCommentData(config,apiKey);
 
 		// Build user lookup from includes.users
 		Map<String, User> userIndex = Optional.ofNullable(resp.getIncludes()).map(Includes::getUsers)
 				.orElseGet(Collections::emptyList).stream().collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
 
-		response.setTotalSearchResult(resp.getData() != null ? resp.getData().size() : 0);
+//		response.setTotalSearchResult(resp.getData() != null ? resp.getData().size() : 0);
 		System.out.println("Count: " + (resp.getMeta() != null ? resp.getMeta().getResultCount() : 0));
 
 		for (Tweet t : Optional.ofNullable(resp.getData()).orElseGet(Collections::emptyList)) {
 			LocalLitAlertItemModel model = new LocalLitAlertItemModel();
 			model.setParentId(parentId);
-			model.setTitle(t.getId());
+			model.setTitle(postTitle);
 			model.setAbsCitation(t.getText());
 
 			// Resolve username via includes
@@ -91,24 +96,26 @@ public class ScoMedService {
 			listArticles.add(model);
 		}
 
-		JournalApiService rest = new JournalApiService();
-//		rest.sentResponse(response);
+		rest.sentResponse(response);
 		return response;
 	}
 
 	public LocalLitMsResponse getYTComments(LocalLitMsRequest requestModel)
 			throws JsonMappingException, JsonProcessingException {
 		Map<String, String> config = getJsonObject(requestModel.getJsonConfig());
+		String postTitle = config.get("postTitle");
 		List<LocalLitAlertItemModel> listArticles = new ArrayList<>();
-
+		String apiKey = requestModel.getCredentials().get("authToken");
+		
+		
 		LocalLitMsResponse response = new LocalLitMsResponse().builder()
 				.listArticles(listArticles)
 				.alertId(requestModel.getAlertId())
 				.wsAuthKey(requestModel.getWsAuthKey())
-				.retransSecurityKey(requestModel.getWsAuthKey())
+//				.retransSecurityKey(requestModel.getWsAuthKey())
 				.build();
 
-		CommentThreadListResponse apiResponse = youTubeApi.fetchCommentData(config);
+		CommentThreadListResponse apiResponse = youTubeApi.fetchCommentData(config, apiKey);
 
 		List<CommentThread> comments = apiResponse.getItems();
 
@@ -119,7 +126,8 @@ public class ScoMedService {
 					.parentId(requestModel.getAlertId())
 					.absCitation(commentData.getTextDisplay())
 					.author(commentData.getAuthorDisplayName())
-					.title(commentData.getAuthorDisplayName() + " " + comment.getId())
+					.title(postTitle)
+					.source(requestModel.getSource())
 					.build();
 			
 			listArticles.add(model);
@@ -127,7 +135,7 @@ public class ScoMedService {
 
 		response.setListArticles(listArticles);
 
-//		rest.sentResponse(response);
+		rest.sentResponse(response);
 		return response;
 	}
 	

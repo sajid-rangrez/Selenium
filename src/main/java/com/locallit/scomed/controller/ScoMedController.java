@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.journal.scrap.model.LocalLitMsRequest;
-import com.journal.scrap.model.LocalLitMsResponse;
 import com.locallit.scomed.service.ScoMedService;
 
 @RestController
@@ -27,7 +27,7 @@ public class ScoMedController {
 
 	@PostMapping("/comments")
 	public String getComments(@RequestBody LocalLitMsRequest requestModel) throws JsonMappingException, JsonProcessingException {
-		scoMedService.getComments(requestModel);
+        scoMedService.getComments(requestModel);
 		return "Scraping Initiated";
 	}
 	@PostMapping("/yt/comments")
@@ -35,5 +35,4 @@ public class ScoMedController {
 		scoMedService.getYTComments(requestModel);
 		return "Scraping Initiated";
 	}
-
 }

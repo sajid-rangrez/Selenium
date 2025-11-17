@@ -6,16 +6,21 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.locallit.scomed.models.twitter.TweetsResponse;
+import com.locallit.scomed.service.ScoMedService;
 
 @Component
 public class TwitterApiConfig {
 	
+	public static final Logger logger = LogManager.getLogger(TwitterApiConfig.class);
+
 	private static final String MAX_RESULTS = "maxResults";
 	private static final String FROM = "from";
 	private static final String TO = "to";
@@ -25,17 +30,15 @@ public class TwitterApiConfig {
 	private static final String URL_START_TIME_PARAM = "&start_time=";
 	private static final String URL_END_TIME_PARAM = "&end_time=";
 
-	private static final String bearerToken = "AAAAAAAAAAAAAAAAAAAAAKDC3wEAAAAAr%2FCcjmJ4Zb4D0xx6vaUgpv4pufo%3D459fCnjgazoR1PqTswpHBsfAbJtdDmIExYLkpbzfTDUNQ6gJAJ";
-
-	public static void fetchPageInfo(String pageName, String fields) {
-//		String apiUrl = "https://api.twitter.com/2/users/by/username/"+pageName+"?user.fields="+fields;
-		String apiUrl = "http://localhost:9090/mock/feed";
+	public static void fetchPageInfo(String pageName, String fields, String authToken) {
+		String apiUrl = "https://api.twitter.com/2/users/by/username/"+pageName+"?user.fields="+fields;
+//		String apiUrl = "http://localhost:9090/mock/feed";
 
 		try {
 			HttpClient client = HttpClient.newHttpClient();
 
 			HttpRequest request = HttpRequest.newBuilder().uri(URI.create(apiUrl))
-					.header("Authorization", "Bearer " + bearerToken).header("Accept", "application/json").GET()
+					.header("Authorization", "Bearer " + authToken).header("Accept", "application/json").GET()
 					.build();
 
 			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -48,7 +51,7 @@ public class TwitterApiConfig {
 		}
 	}
 
-	public static String fetchFeedData(String searchQuery, int limit) {
+	public static String fetchFeedData(String searchQuery, int limit, String authToken) {
 //		String apiUrl = "https://api.twitter.com/2/users/"+pageId+"/tweets?max_results="+limit+"&tweet.fields=created_at,public_metrics&start_time=2020-12-30T00:00:00.00Z&end_time=2021-01-01T00:00:00.00Z";
 		String apiUrl = "https://api.twitter.com/2/tweets/search/recent?query=" + searchQuery
 				+ "&tweet.fields=author_id,created_at,text,public_metrics&expansions=author_id&user.fields=username&max_results=10&media.fields=url";
@@ -57,7 +60,7 @@ public class TwitterApiConfig {
 			HttpClient client = HttpClient.newHttpClient();
 
 			HttpRequest request = HttpRequest.newBuilder().uri(URI.create(apiUrl))
-					.header("Authorization", "Bearer " + bearerToken).header("Accept", "application/json").GET()
+					.header("Authorization", "Bearer " + authToken).header("Accept", "application/json").GET()
 					.build();
 
 			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -72,7 +75,7 @@ public class TwitterApiConfig {
 		}
 	}
 
-	public static String fetchMockFeedData(String pageId, int limit) {
+	public static String fetchMockFeedData(String pageId, int limit, String authToken) {
 //		String apiUrl = "https://api.twitter.com/2/users/"+pageId+"/tweets?max_results="+limit+"&tweet.fields=created_at,public_metrics&start_time=2020-12-30T00:00:00.00Z&end_time=2021-01-01T00:00:00.00Z";
 		String apiUrl = "http://localhost:9090/mock/search";
 
@@ -80,7 +83,7 @@ public class TwitterApiConfig {
 			HttpClient client = HttpClient.newHttpClient();
 
 			HttpRequest request = HttpRequest.newBuilder().uri(URI.create(apiUrl))
-					.header("Authorization", "Bearer " + bearerToken).header("Accept", "application/json").GET()
+					.header("Authorization", "Bearer " + authToken).header("Accept", "application/json").GET()
 					.build();
 
 			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -95,17 +98,17 @@ public class TwitterApiConfig {
 		}
 	}
 
-	public TweetsResponse fetchMockCommentData(Map<String, String> config) {
+	public TweetsResponse fetchMockCommentData(Map<String, String> config, String authToken) {
 
-		String url = buildTwitterUrl(config);
+		String apiUrl = buildTwitterUrl(config);
 //		String apiUrl = "https://api.twitter.com/2/tweets/search/recent?query=conversation_id:"+postId+"&tweet.fields=author_id,created_at,text&start_time=2020-12-30T00:00:00.00Z&end_time=2021-01-01T00:00:00.00Z&max_results="+limit;
-		String apiUrl = "http://localhost:9090/mock/comment";
+//		String apiUrl = "http://localhost:9090/mock/comment";
 
 		try {
 			HttpClient client = HttpClient.newHttpClient();
 
 			HttpRequest request = HttpRequest.newBuilder().uri(URI.create(apiUrl))
-					.header("Authorization", "Bearer " + bearerToken).header("Accept", "application/json").GET()
+					.header("Authorization", "Bearer " + authToken).header("Accept", "application/json").GET()
 					.build();
 
 			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -114,6 +117,7 @@ public class TwitterApiConfig {
 //			System.out.println("Response: " + response.body());
 
 			String data = response.body();
+			logger.info(data);
 			ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule())
 					.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
